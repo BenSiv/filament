@@ -24,7 +24,8 @@ httpx>=0.26.0
 selenium>=4.16.0  # For dynamic content
 
 # Document Processing
-unstract>=0.1.0  # PDF/Unstructured extraction
+# unstract>=0.1.0  # Not yet available on PyPI - use alternative
+unstructured>=0.10.0  # Alternative document processing
 pypdf>=3.17.0
 python-docx>=1.1.0
 

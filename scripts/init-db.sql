@@ -177,4 +177,5 @@ VALUES
     ('TEST-MP-001', 'NCMPUR', 'Jane Test', '2023-06-15', 'Chilliwack, BC', 49.16, -121.95, 28, 'Female', 'Test missing person for development. Was wearing a bunnyhug and sneakers.')
 ON CONFLICT (file_number) DO NOTHING;
 
-RAISE NOTICE 'FILAMENT database initialized successfully!';
+-- Database initialization complete
+SELECT 'FILAMENT database initialized successfully!' AS status;

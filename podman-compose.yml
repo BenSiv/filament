@@ -37,7 +37,7 @@ services:
   # PostgreSQL with pgvector
   # =============================================================================
   postgres:
-    image: pgvector/pgvector:pg16
+    image: docker.io/pgvector/pgvector:pg16
     container_name: filament-postgres
     environment:
       POSTGRES_DB: filament
@@ -60,7 +60,7 @@ services:
   # Neo4j Graph Database
   # =============================================================================
   neo4j:
-    image: neo4j:5.15-community
+    image: docker.io/library/neo4j:5.15-community
     container_name: filament-neo4j
     environment:
       NEO4J_AUTH: neo4j/filament_dev
@@ -84,7 +84,7 @@ services:
   # Ollama - Local LLM Server
   # =============================================================================
   ollama:
-    image: ollama/ollama:latest
+    image: docker.io/ollama/ollama:latest
     container_name: filament-ollama
     volumes:
       - ollama-models:/root/.ollama
