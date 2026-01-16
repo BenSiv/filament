@@ -24,12 +24,12 @@
 ---
 
 ### 2. UNIDENTIFIED: "Spanish Banks Jane Doe" (2022)
-**UHR Case**: 2022-3008-0321
+**UHR Case**: `2022-3008-0321` ✅ VERIFIED IN DATABASE
 
 | Field | Value |
 |-------|-------|
 | Found | September 29, 2022 |
-| Location | Spanish Banks, Vancouver |
+| Location | Spanish Banks, Vancouver (49.279°N, -123.225°W) |
 | Profile | Female, 25-40yo, Black |
 | Hair | Black, curly, short |
 | Eyes | Brown |
@@ -42,13 +42,13 @@
 ---
 
 ### 3. UNIDENTIFIED: "Britannia Centre John Doe" (2023)
-**UHR Case**: 2023-0290-0078
+**UHR Case**: `2023-0290-0078` ✅ VERIFIED IN DATABASE
 
 | Field | Value |
 |-------|-------|
-| Found | March 24, 2023 (died in hospital) |
-| Location | Near Britannia Community Centre, Vancouver |
-| Profile | Male, 30s, Caucasian |
+| Found | March 22, 2023 (died in hospital March 24) |
+| Location | Near Britannia Community Centre (49.274°N, -123.070°W) |
+| Profile | Male, 30-40yo, Caucasian |
 | Height | ~5'11", 155 lbs |
 | Hair | Short, dark brown |
 | Eyes | Brown |
@@ -59,7 +59,7 @@
 ---
 
 ### 4. UNIDENTIFIED: "Knight Street Bridge Woman" (2023)
-**UHR Case**: Likely 2023 case
+**UHR Case**: ❌ NOT IN DATABASE (found after May 2023 data cutoff)
 
 | Field | Value |
 |-------|-------|
@@ -81,15 +81,16 @@
 ---
 
 ### 5. UNIDENTIFIED: "North Vancouver John Doe" (2022)
-**UHR Case**: 2022-5054-0163
+**UHR Case**: `2022-5054-0163` ✅ VERIFIED IN DATABASE
 
 | Field | Value |
 |-------|-------|
-| Found | April 17, 2022 |
-| Location | Capilano River, North Vancouver |
+| Found | April 16, 2022 |
+| Location | Capilano River, North Vancouver (49.354°N, -123.113°W) |
 | Profile | Male, 20-30yo |
 | Hair | Short, black |
-| Notes | Curly beard, 87.3kg |
+| Weight | 87.3kg |
+| Clothing | White Uniqlo sweater (M), Monte Carlo thermal (40), Jockey underwear |
 
 **News Coverage**: Multiple outlets  
 **Circumstance**: Believed to have fallen/jumped from Cleveland Dam
