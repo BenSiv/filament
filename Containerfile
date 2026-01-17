@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     curl \
     git \
+    chromium \
+    chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -23,6 +25,8 @@ WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
+# Install CPU-only PyTorch first to avoid downloading huge CUDA libs
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code

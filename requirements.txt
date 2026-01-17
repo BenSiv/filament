@@ -22,6 +22,8 @@ requests>=2.31.0
 beautifulsoup4>=4.12.0
 httpx>=0.26.0
 selenium>=4.16.0  # For dynamic content
+youtube-transcript-api>=0.6.0 # For retrieving YouTube captions
+scrapetube>=2.5.0 # For fetching video lists without API key
 
 # Document Processing
 # unstract>=0.1.0  # Not yet available on PyPI - use alternative
