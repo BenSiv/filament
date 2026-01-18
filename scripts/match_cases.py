@@ -528,6 +528,7 @@ def main():
     parser.add_argument("--require-gender", action="store_true", help="Only match UHR with known sex")
     parser.add_argument("--require-features", action="store_true", help="Only match UHR with tattoos/scars/dental")
     parser.add_argument("--require-clothing", action="store_true", help="Only match UHR with clothing")
+    parser.add_argument("--require-mp-age", action="store_true", help="Only match MPs with age data")
     parser.add_argument("--no-geo-filter", action="store_true", help="Disable state-based geographic filtering")
     args = parser.parse_args()
     
@@ -559,6 +560,12 @@ def main():
     if args.require_clothing:
         data['uhr'] = [u for u in data['uhr'] if u.get('hasClothing')]
         print(f"Filter --require-clothing: {original_count} -> {len(data['uhr'])} UHR")
+    
+    # MP filters
+    if args.require_mp_age:
+        mp_original = len(data['mp'])
+        data['mp'] = [m for m in data['mp'] if m.get('computedMissingMinAge') or m.get('computedMissingMaxAge')]
+        print(f"Filter --require-mp-age: {mp_original} -> {len(data['mp'])} MP")
     
     print(f"\nTotal: {len(data['uhr'])} UHR × {len(data['mp'])} MP = {len(data['uhr'])*len(data['mp']):,} potential pairs")
     
