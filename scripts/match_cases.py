@@ -87,6 +87,25 @@ def normalize_sex(v):
 
 def get_state(case):
     """Extract 2-letter state code."""
+    # Complete US state mapping
+    STATE_MAP = {
+        'ALABAMA': 'AL', 'ALASKA': 'AK', 'ARIZONA': 'AZ', 'ARKANSAS': 'AR',
+        'CALIFORNIA': 'CA', 'COLORADO': 'CO', 'CONNECTICUT': 'CT', 'DELAWARE': 'DE',
+        'FLORIDA': 'FL', 'GEORGIA': 'GA', 'HAWAII': 'HI', 'IDAHO': 'ID',
+        'ILLINOIS': 'IL', 'INDIANA': 'IN', 'IOWA': 'IA', 'KANSAS': 'KS',
+        'KENTUCKY': 'KY', 'LOUISIANA': 'LA', 'MAINE': 'ME', 'MARYLAND': 'MD',
+        'MASSACHUSETTS': 'MA', 'MICHIGAN': 'MI', 'MINNESOTA': 'MN', 'MISSISSIPPI': 'MS',
+        'MISSOURI': 'MO', 'MONTANA': 'MT', 'NEBRASKA': 'NE', 'NEVADA': 'NV',
+        'NEW HAMPSHIRE': 'NH', 'NEW JERSEY': 'NJ', 'NEW MEXICO': 'NM', 'NEW YORK': 'NY',
+        'NORTH CAROLINA': 'NC', 'NORTH DAKOTA': 'ND', 'OHIO': 'OH', 'OKLAHOMA': 'OK',
+        'OREGON': 'OR', 'PENNSYLVANIA': 'PA', 'RHODE ISLAND': 'RI', 'SOUTH CAROLINA': 'SC',
+        'SOUTH DAKOTA': 'SD', 'TENNESSEE': 'TN', 'TEXAS': 'TX', 'UTAH': 'UT',
+        'VERMONT': 'VT', 'VIRGINIA': 'VA', 'WASHINGTON': 'WA', 'WEST VIRGINIA': 'WV',
+        'WISCONSIN': 'WI', 'WYOMING': 'WY', 'DISTRICT OF COLUMBIA': 'DC',
+        'PUERTO RICO': 'PR', 'GUAM': 'GU', 'VIRGIN ISLANDS': 'VI',
+        'BRITISH COLUMBIA': 'BC', 'ONTARIO': 'ON', 'ALBERTA': 'AB', 'QUEBEC': 'QC'
+    }
+    
     for field in ['stateDisplayNameOfRecovery', 'stateOfRecovery', 
                   'stateDisplayNameOfLastContact', 'stateOfLastContact', 'state']:
         val = case.get(field)
@@ -94,14 +113,8 @@ def get_state(case):
             val = str(val).strip().upper()
             if len(val) == 2:
                 return val
-            # Map full names to codes (simplified)
-            state_map = {
-                'CALIFORNIA': 'CA', 'TEXAS': 'TX', 'FLORIDA': 'FL', 'NEW YORK': 'NY',
-                'WASHINGTON': 'WA', 'OREGON': 'OR', 'ARIZONA': 'AZ', 'NEVADA': 'NV',
-                'BRITISH COLUMBIA': 'BC', 'ONTARIO': 'ON', 'ALBERTA': 'AB'
-            }
-            if val in state_map:
-                return state_map[val]
+            if val in STATE_MAP:
+                return STATE_MAP[val]
     return None
 
 
@@ -132,6 +145,83 @@ def get_age_range(case, is_uhr=True):
         except:
             pass
     return (0, 100)  # Unknown = wide range
+
+
+def get_height_cm(case):
+    """
+    Extract height in cm. Returns (min_cm, max_cm) or (None, None).
+    Handles various formats: cm, inches, feet+inches.
+    """
+    # Try different field names
+    for field in ['heightFrom', 'heightTo', 'height', 'Height', 
+                  'heightFromClassic', 'heightToClassic',
+                  'estimatedHeightFrom', 'estimatedHeightTo']:
+        val = case.get(field)
+        if val:
+            try:
+                # If numeric, assume cm
+                cm = float(val)
+                if cm < 100:  # Likely feet
+                    cm = cm * 30.48
+                elif cm < 250:  # Reasonable cm
+                    return cm
+            except:
+                pass
+            
+            # Try parsing string like "5'10" or "170 cm"
+            if isinstance(val, str):
+                val = val.lower().strip()
+                if 'cm' in val:
+                    try:
+                        return float(val.replace('cm', '').strip())
+                    except:
+                        pass
+                if "'" in val or 'ft' in val:
+                    try:
+                        parts = val.replace('ft', "'").replace('"', '').split("'")
+                        feet = int(parts[0])
+                        inches = int(parts[1]) if len(parts) > 1 and parts[1] else 0
+                        return feet * 30.48 + inches * 2.54
+                    except:
+                        pass
+    return None
+
+
+def get_height_range(case, is_uhr=True):
+    """Get height range in cm as (min, max). NamUs uses inches in subjectDescription."""
+    # Try nested subjectDescription first (full case details)
+    sd = case.get('subjectDescription', {})
+    h_from = sd.get('heightFrom')
+    h_to = sd.get('heightTo')
+    
+    # Also try top-level fields (summaries or other formats)
+    if not h_from:
+        h_from = case.get('heightFrom') or case.get('estimatedHeightFrom')
+    if not h_to:
+        h_to = case.get('heightTo') or case.get('estimatedHeightTo')
+    
+    # Convert inches to cm (NamUs uses inches)
+    def to_cm(val):
+        if val is None:
+            return None
+        try:
+            inches = float(val)
+            if inches < 100:  # Definitely inches
+                return inches * 2.54
+            return inches  # Already cm
+        except:
+            return None
+    
+    h_min_cm = to_cm(h_from)
+    h_max_cm = to_cm(h_to)
+    
+    if h_min_cm and h_max_cm:
+        return (min(h_min_cm, h_max_cm), max(h_min_cm, h_max_cm))
+    elif h_min_cm:
+        return (h_min_cm - 5, h_min_cm + 5)
+    elif h_max_cm:
+        return (h_max_cm - 5, h_max_cm + 5)
+    return (None, None)
 
 
 def build_mp_index(mp_cases):
@@ -202,6 +292,22 @@ def score_pair(uhr, mp, uhr_year):
     if uhr_age[1] < mp_age[0] - 10 or uhr_age[0] > mp_age[1] + 15:
         return None
     
+    # Height filter (±15cm tolerance)
+    uhr_height = get_height_range(uhr, True)
+    mp_height = get_height_range(mp, False)
+    height_score = 0.5  # Default neutral
+    
+    if uhr_height[0] and mp_height[0]:
+        # Both have height data - check overlap
+        tolerance = 15  # cm
+        if uhr_height[1] + tolerance < mp_height[0] or uhr_height[0] - tolerance > mp_height[1]:
+            return None  # Heights don't overlap
+        
+        # Calculate height match score
+        overlap = min(uhr_height[1], mp_height[1]) - max(uhr_height[0], mp_height[0])
+        height_score = min(1.0, max(0.3, overlap / 20))
+        reasons.append(f"Height match")
+    
     # Calculate score components
     age_overlap = min(uhr_age[1], mp_age[1]) - max(uhr_age[0], mp_age[0])
     age_score = min(1.0, max(0.3, age_overlap / 20)) if age_overlap > 0 else 0.4
@@ -218,7 +324,8 @@ def score_pair(uhr, mp, uhr_year):
             year_score = 0.6
         reasons.append(f"{years_diff}yr gap")
     
-    score = age_score * 0.4 + year_score * 0.4 + 0.5 * 0.2
+    # Weighted score: age 30%, year 30%, height 20%, base 20%
+    score = age_score * 0.30 + year_score * 0.30 + height_score * 0.20 + 0.5 * 0.20
     return score, reasons
 
 
@@ -276,10 +383,16 @@ def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5):
 def load_data():
     data = {'uhr': [], 'mp': []}
     
-    namus_uhr = load_json(f"{DATA_DIR}/namus_unidentified_summaries.json")
-    if namus_uhr:
-        print(f"Loaded {len(namus_uhr)} NamUs UHR")
+    # Prefer flattened file (fast, has height)
+    namus_uhr = load_json(f"{DATA_DIR}/namus_unidentified_flat.json")
+    if namus_uhr and len(namus_uhr) > 1000:
+        print(f"Loaded {len(namus_uhr)} NamUs UHR (flattened with height)")
         data['uhr'].extend(namus_uhr)
+    else:
+        namus_uhr = load_json(f"{DATA_DIR}/namus_unidentified_summaries.json")
+        if namus_uhr:
+            print(f"Loaded {len(namus_uhr)} NamUs UHR (summaries)")
+            data['uhr'].extend(namus_uhr)
     
     bc = load_json(f"{DATA_DIR}/bc_uhr_cases.json")
     if bc and isinstance(bc, dict):
@@ -311,6 +424,10 @@ def main():
     parser.add_argument("--max-per-uhr", type=int, default=5)
     parser.add_argument("--output", default=f"{OUTPUT_DIR}/leads.json")
     parser.add_argument("--test", action="store_true")
+    parser.add_argument("--require-height", action="store_true", help="Only match UHR with height data")
+    parser.add_argument("--require-gender", action="store_true", help="Only match UHR with known sex")
+    parser.add_argument("--require-features", action="store_true", help="Only match UHR with tattoos/scars/dental")
+    parser.add_argument("--require-clothing", action="store_true", help="Only match UHR with clothing")
     args = parser.parse_args()
     
     print("=" * 60)
@@ -319,6 +436,29 @@ def main():
     print("=" * 60)
     
     data = load_data()
+    
+    # Apply UHR filters
+    original_count = len(data['uhr'])
+    
+    if args.require_height:
+        data['uhr'] = [u for u in data['uhr'] if u.get('heightFrom')]
+        print(f"Filter --require-height: {original_count} -> {len(data['uhr'])} UHR")
+        original_count = len(data['uhr'])
+    
+    if args.require_gender:
+        data['uhr'] = [u for u in data['uhr'] if u.get('sex') and u.get('sex').lower() not in ['unknown', 'unsure', 'u']]
+        print(f"Filter --require-gender: {original_count} -> {len(data['uhr'])} UHR")
+        original_count = len(data['uhr'])
+    
+    if args.require_features:
+        data['uhr'] = [u for u in data['uhr'] if u.get('hasTattoo') or u.get('hasScar') or u.get('hasDental')]
+        print(f"Filter --require-features: {original_count} -> {len(data['uhr'])} UHR")
+        original_count = len(data['uhr'])
+    
+    if args.require_clothing:
+        data['uhr'] = [u for u in data['uhr'] if u.get('hasClothing')]
+        print(f"Filter --require-clothing: {original_count} -> {len(data['uhr'])} UHR")
+    
     print(f"\nTotal: {len(data['uhr'])} UHR × {len(data['mp'])} MP = {len(data['uhr'])*len(data['mp']):,} potential pairs")
     
     if args.test:
