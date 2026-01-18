@@ -11,12 +11,16 @@ ALGORITHMIC OPTIMIZATIONS:
 This reduces 450M comparisons to ~5-10M (95%+ reduction).
 """
 
+import os
 import json
 import argparse
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import radians, sin, cos, sqrt, atan2
 from collections import defaultdict
+import multiprocessing
+import unicodedata
+import difflib
+import re
 
 try:
     from tqdm import tqdm
@@ -150,6 +154,55 @@ def get_date(case, field_names):
             if result:
                 return result
     return None
+
+
+def get_estimated_dod(uhr):
+    """
+    Calculate estimated Date of Death (DoD) range:
+    DoD = DateFound - PMI
+    Returns (dod_earliest, dod_latest) or timestamp objects.
+    """
+    found_date_tuple = get_date(uhr, ['dateFound'])
+    if not found_date_tuple:
+        return None, None
+    
+    found_dt = datetime(found_date_tuple[0], found_date_tuple[1], found_date_tuple[2])
+    
+    pmi_val = uhr.get('pmiVal')
+    pmi_unit = uhr.get('pmiUnit', '').lower()
+    
+    if not pmi_val:
+        return found_dt, found_dt  # No PMI, assume found date is latest DoD
+        
+    try:
+        val = float(pmi_val)
+        days = 0
+        if 'year' in pmi_unit:
+            days = val * 365
+        elif 'month' in pmi_unit:
+            days = val * 30
+        elif 'week' in pmi_unit:
+            days = val * 7
+        elif 'day' in pmi_unit:
+            days = val
+        elif 'hour' in pmi_unit:
+            days = val / 24
+        else:
+            return found_dt, found_dt
+            
+        # PMI is an estimate, so we create a window
+        # Example: PMI 2 weeks -> DoD was 2 weeks ago (+/- margin)
+        estimated_dod = found_dt - timedelta(days=days)
+        
+        # Create a reasonable window based on the unit magnitude
+        margin = days * 0.5  # 50% margin
+        dod_min = estimated_dod - timedelta(days=margin)
+        dod_max = estimated_dod + timedelta(days=margin)
+        
+        return dod_min, dod_max
+        
+    except:
+        return found_dt, found_dt
 
 
 def get_age_range(case, is_uhr=True):
@@ -306,9 +359,20 @@ def score_pair(uhr, mp, uhr_date):
     reasons = []
     
     # Date filter: MP must be missing BEFORE UHR found (full date comparison)
+    # New: Use PMI for Estimated Date of Death (DoD)
+    dod_min, dod_max = get_estimated_dod(uhr)
     mp_date = get_date(mp, ['dateOfLastContact', 'dateMissing'])
-    if mp_date and uhr_date and mp_date > uhr_date:
-        return None  # MP went missing AFTER remains were found - impossible
+    
+    if mp_date and dod_min and dod_max:
+        mp_dt = datetime(mp_date[0], mp_date[1], mp_date[2])
+        
+        # If MP went missing significantly AFTER the estimated latest DoD, it's impossible
+        # Margin of error: 30 days
+        if mp_dt > dod_max + timedelta(days=30):
+            return None
+    elif mp_date and uhr_date and mp_date > uhr_date:
+        # Fallback to found date if no PMI
+        return None
     
     # Age filter
     uhr_age = get_age_range(uhr, True)
@@ -340,17 +404,52 @@ def score_pair(uhr, mp, uhr_date):
         
         # Calculate height match score
         overlap = min(uhr_height[1], mp_height[1]) - max(uhr_height[0], mp_height[0])
-        height_score = min(1.0, max(0.3, overlap / 20))
+        if overlap >= 0:
+            height_score = 1.0
+        else:
+            # Within tolerance but not overlapping
+            distance = abs(overlap)
+            height_score = max(0.5, 1.0 - (distance / 15))
         reasons.append("Height match")
     
     # Calculate score components
     age_overlap = min(uhr_age[1], mp_age[1]) - max(uhr_age[0], mp_age[0])
-    age_score = min(1.0, max(0.3, age_overlap / 20)) if age_overlap > 0 else 0.4
+    if age_overlap >= 0:
+        age_score = 1.0
+    else:
+        # Within tolerance but not overlapping
+        distance = abs(age_overlap)
+        age_score = max(0.5, 1.0 - (distance / 10))
     
     # Timeline proximity (closer = better) - use full dates
     timeline_score = 0.5
-    if mp_date and uhr_date:
-        # Calculate approximate days difference
+    if mp_date and dod_min:
+        # Calculate days difference from Estimated DoD
+        # We take the distance to the DoD window
+        dist_min = (mp_dt - dod_max).days
+        dist_max = (uhr_date[0] - mp_date[0]) * 365 # upper bound
+        
+        # Ideally, mp_date is slightly before DoD
+        # If mp_date is within DoD window (dist_min <= 0 and >= (dod_min-dod_max).days), it's perfect
+        
+        diff_days = (dod_min - mp_dt).days
+        
+        if diff_days >= -30 and diff_days <= 90: # Missing 0-3 months before death
+            timeline_score = 1.0
+            reasons.append("Timeline: Missing close to estimated death")
+        elif diff_days > 90 and diff_days <= 365:
+            timeline_score = 0.9
+            reasons.append(f"Timeline: Missing {diff_days} days before estimated death")
+        elif diff_days > 365 and diff_days <= 730:
+            timeline_score = 0.8
+        elif diff_days > 730:
+            timeline_score = 0.4 # Long time missing
+        else:
+            # Missing AFTER estimated death (but within margin)
+            timeline_score = 0.3
+            
+    elif mp_date and uhr_date:
+        # Fallback to Found Date
         days_diff = (uhr_date[0] - mp_date[0]) * 365 + (uhr_date[1] - mp_date[1]) * 30 + (uhr_date[2] - mp_date[2])
         
         if days_diff <= 90:  # Within 3 months
@@ -366,26 +465,44 @@ def score_pair(uhr, mp, uhr_date):
         
         reasons.append(f"Timeline: Found {days_diff} days after disappearance")
     
-    # Feature text matching (tattoos, scars, dental)
+    # Feature matching (Jaccard + Fuzzy)
     feature_score = 0.5  # Default neutral
     uhr_features = uhr.get('featureText', '') or ''
     mp_features = (mp.get('tattoos', '') or '') + ' ' + (mp.get('scarsMarks', '') or '')
     
+    # Common stopwords to ignore
+    STOPWORDS = {'no', 'none', 'unknown', 'the', 'a', 'and', 'or', 'on', 'left', 'right', 'upper', 'lower', 'arm', 'leg', 'body', 'description', 'tattoo', 'scar'}
+    
     if uhr_features and mp_features:
-        # Simple word overlap for feature matching
-        uhr_words = set(uhr_features.lower().split()) - {'no', 'none', 'unknown', 'the', 'a', 'and', 'or'}
-        mp_words = set(mp_features.lower().split()) - {'no', 'none', 'unknown', 'the', 'a', 'and', 'or'}
+        uhr_words = set(re.findall(r'\w+', uhr_features.lower())) - STOPWORDS
+        mp_words = set(re.findall(r'\w+', mp_features.lower())) - STOPWORDS
         
         if uhr_words and mp_words:
-            overlap = uhr_words & mp_words
-            if overlap:
-                # Found matching keywords!
-                feature_score = min(1.0, 0.6 + len(overlap) * 0.1)
-                matching_words = list(overlap)[:3]
-                reasons.append(f"Feature match: {', '.join(matching_words)}")
+            # Jaccard Similarity
+            intersection = uhr_words & mp_words
+            union = uhr_words | mp_words
+            jaccard = len(intersection) / len(union)
+            
+            # Fuzzy match for remaining words
+            fuzzy_hits = 0
+            for w1 in uhr_words:
+                if w1 in intersection: continue
+                matches = difflib.get_close_matches(w1, mp_words, n=1, cutoff=0.85)
+                if matches:
+                    fuzzy_hits += 1
+                    intersection.add(w1) # Add to intersection for reason reporting
+            
+            # Recalculate score with fuzzy hits
+            final_score = (len(intersection) + fuzzy_hits * 0.8) / len(union)
+            
+            if final_score > 0.1:
+                feature_score = min(1.0, 0.5 + final_score * 2) # Boost score
+                cleaned_matches = intersection - STOPWORDS
+                if cleaned_matches:
+                    reasons.append(f"Features: {', '.join(list(cleaned_matches)[:3])}")
     
-    # Tattoo keyword matching (high value)
     tattoo_bonus = 0
+    # Tattoo Keyword Bonus (remains same)
     if uhr.get('hasTattoo'):
         uhr_tattoo_text = uhr_features.lower()
         mp_tattoo_text = (mp.get('tattoos', '') or '').lower()
