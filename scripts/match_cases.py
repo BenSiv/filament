@@ -130,6 +130,28 @@ def get_year(case, field_names):
     return None
 
 
+def parse_date(date_str):
+    """Parse date string to comparable tuple (year, month, day)."""
+    if not date_str:
+        return None
+    try:
+        parts = date_str.split('T')[0].split('-')
+        return (int(parts[0]), int(parts[1]), int(parts[2]))
+    except:
+        return None
+
+
+def get_date(case, field_names):
+    """Get date tuple from case."""
+    for field in field_names:
+        val = case.get(field)
+        if val:
+            result = parse_date(val)
+            if result:
+                return result
+    return None
+
+
 def get_age_range(case, is_uhr=True):
     """Get age range as (min, max)."""
     if is_uhr:
@@ -275,14 +297,14 @@ def get_candidate_mps(mp_index, uhr_sex, uhr_state):
     return candidates
 
 
-def score_pair(uhr, mp, uhr_year):
+def score_pair(uhr, mp, uhr_date):
     """Score a candidate pair. Returns (score, reasons) or None."""
     reasons = []
     
-    # Date filter: MP must be missing before UHR found
-    mp_year = get_year(mp, ['dateOfLastContact', 'dateMissing'])
-    if mp_year and uhr_year and mp_year > uhr_year:
-        return None
+    # Date filter: MP must be missing BEFORE UHR found (full date comparison)
+    mp_date = get_date(mp, ['dateOfLastContact', 'dateMissing'])
+    if mp_date and uhr_date and mp_date > uhr_date:
+        return None  # MP went missing AFTER remains were found - impossible
     
     # Age filter
     uhr_age = get_age_range(uhr, True)
@@ -312,17 +334,24 @@ def score_pair(uhr, mp, uhr_year):
     age_overlap = min(uhr_age[1], mp_age[1]) - max(uhr_age[0], mp_age[0])
     age_score = min(1.0, max(0.3, age_overlap / 20)) if age_overlap > 0 else 0.4
     
-    # Year proximity (closer = better)
-    year_score = 0.5
-    if mp_year and uhr_year:
-        years_diff = uhr_year - mp_year
-        if years_diff <= 2:
-            year_score = 1.0
-        elif years_diff <= 5:
-            year_score = 0.8
-        elif years_diff <= 10:
-            year_score = 0.6
-        reasons.append(f"{years_diff}yr gap")
+    # Timeline proximity (closer = better) - use full dates
+    timeline_score = 0.5
+    if mp_date and uhr_date:
+        # Calculate approximate days difference
+        days_diff = (uhr_date[0] - mp_date[0]) * 365 + (uhr_date[1] - mp_date[1]) * 30 + (uhr_date[2] - mp_date[2])
+        
+        if days_diff <= 90:  # Within 3 months
+            timeline_score = 1.0
+        elif days_diff <= 365:  # Within 1 year
+            timeline_score = 0.9
+        elif days_diff <= 730:  # Within 2 years
+            timeline_score = 0.8
+        elif days_diff <= 1825:  # Within 5 years
+            timeline_score = 0.6
+        else:
+            timeline_score = 0.4
+        
+        reasons.append(f"Timeline: Found {days_diff} days after disappearance")
     
     # Feature text matching (tattoos, scars, dental)
     feature_score = 0.5  # Default neutral
@@ -372,9 +401,9 @@ def score_pair(uhr, mp, uhr_year):
                 reasons.append(f"Clothing: {brand}")
                 break
     
-    # Weighted score: age 20%, year 25%, height 15%, features 25%, clothing 15%
+    # Weighted score: age 20%, timeline 25%, height 15%, features 25%, clothing 15%
     score = (age_score * 0.20 + 
-             year_score * 0.25 + 
+             timeline_score * 0.25 + 
              height_score * 0.15 + 
              feature_score * 0.25 + 
              clothing_score * 0.15 +
@@ -400,7 +429,7 @@ def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5):
         uhr_id = uhr.get('idFormatted') or uhr.get('namus2Number') or uhr.get('Case_Numbe')
         uhr_sex = normalize_sex(uhr.get('sex') or uhr.get('biologicalSex') or uhr.get('Sex'))
         uhr_state = get_state(uhr)
-        uhr_year = get_year(uhr, ['dateFound'])
+        uhr_date = get_date(uhr, ['dateFound'])
         
         # Get filtered candidates
         candidates = get_candidate_mps(mp_index, uhr_sex, uhr_state)
@@ -408,7 +437,7 @@ def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5):
         
         matches = []
         for mp in candidates:
-            result = score_pair(uhr, mp, uhr_year)
+            result = score_pair(uhr, mp, uhr_date)
             if result and result[0] >= min_score:
                 score, reasons = result
                 mp_id = mp.get('idFormatted') or mp.get('namus2Number') or mp.get('case_id')
