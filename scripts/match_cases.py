@@ -421,7 +421,7 @@ def score_pair(uhr, mp, uhr_date):
     return score, reasons
 
 
-def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5):
+def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5, geo_filter=True):
     """Match with smart filtering."""
     mp_index = build_mp_index(mp_cases)
     
@@ -440,8 +440,12 @@ def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5):
         uhr_state = get_state(uhr)
         uhr_date = get_date(uhr, ['dateFound'])
         
-        # Get filtered candidates
-        candidates = get_candidate_mps(mp_index, uhr_sex, uhr_state)
+        # Get filtered candidates (geo_filter controls state restriction)
+        if geo_filter:
+            candidates = get_candidate_mps(mp_index, uhr_sex, uhr_state)
+        else:
+            # No geo filter - get all MPs of same/unknown sex
+            candidates = mp_index.get(uhr_sex, {}).get(None, []) + mp_index.get('U', {}).get(None, [])
         compared += len(candidates)
         
         matches = []
@@ -520,6 +524,7 @@ def main():
     parser.add_argument("--require-gender", action="store_true", help="Only match UHR with known sex")
     parser.add_argument("--require-features", action="store_true", help="Only match UHR with tattoos/scars/dental")
     parser.add_argument("--require-clothing", action="store_true", help="Only match UHR with clothing")
+    parser.add_argument("--no-geo-filter", action="store_true", help="Disable state-based geographic filtering")
     args = parser.parse_args()
     
     print("=" * 60)
@@ -557,7 +562,11 @@ def main():
         data['uhr'] = data['uhr'][:1000]
         print(f"Test: {len(data['uhr'])} UHR")
     
-    matches = match_all(data['uhr'], data['mp'], args.min_score, args.max_per_uhr)
+    if args.no_geo_filter:
+        print("Geographic filtering: DISABLED")
+    
+    matches = match_all(data['uhr'], data['mp'], args.min_score, args.max_per_uhr, 
+                        geo_filter=not args.no_geo_filter)
     
     by_pri = defaultdict(int)
     for m in matches:
