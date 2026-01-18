@@ -246,22 +246,26 @@ def get_height_range(case, is_uhr=True):
     return (None, None)
 
 
-def build_mp_index(mp_cases):
-    """Build multi-dimensional index for fast lookup."""
-    print("Building MP index (sex × state × decade)...")
+def build_mp_index(mp_cases, geo_filter=True):
+    """Build index for fast lookup."""
+    if geo_filter:
+        print("Building MP index (sex × state)...")
+    else:
+        print("Building MP index (sex only, geo filter disabled)...")
     
-    # Index structure: sex -> state -> list of MPs
+    # Index structure: sex -> state -> list of MPs (or sex -> None -> all)
     index = defaultdict(lambda: defaultdict(list))
     
     for mp in mp_cases:
         sex = normalize_sex(mp.get('gender') or mp.get('sex') or mp.get('details', {}).get('Gender'))
-        state = get_state(mp)
         
-        index[sex][state].append(mp)
-        index[sex][None].append(mp)  # Also add to "any state" bucket
+        if geo_filter:
+            state = get_state(mp)
+            index[sex][state].append(mp)
+        
+        index[sex][None].append(mp)  # Always add to "any state" bucket
     
     # Stats
-    total = sum(len(v) for states in index.values() for v in states.values())
     print(f"  Indexed {len(mp_cases)} MPs into {len(index)} sex buckets")
     
     return index
@@ -423,7 +427,7 @@ def score_pair(uhr, mp, uhr_date):
 
 def match_all(uhr_cases, mp_cases, min_score=0.4, max_per_uhr=5, geo_filter=True):
     """Match with smart filtering."""
-    mp_index = build_mp_index(mp_cases)
+    mp_index = build_mp_index(mp_cases, geo_filter=geo_filter)
     
     all_matches = []
     skipped = 0
