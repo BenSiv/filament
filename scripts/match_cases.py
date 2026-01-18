@@ -314,6 +314,15 @@ def score_pair(uhr, mp, uhr_date):
     if uhr_age[1] < mp_age[0] - 10 or uhr_age[0] > mp_age[1] + 15:
         return None
     
+    # Add sex match info
+    uhr_sex = uhr.get('sex', 'Unknown')
+    mp_sex = mp.get('gender', 'Unknown')
+    reasons.append(f"Sex match: {uhr_sex}")
+    
+    # Add age info
+    if uhr_age[0] and uhr_age[1] and mp_age[0]:
+        reasons.append(f"Age: UHR {uhr_age[0]}-{uhr_age[1]}, MP ~{mp_age[0]}")
+    
     # Height filter (±15cm tolerance)
     uhr_height = get_height_range(uhr, True)
     mp_height = get_height_range(mp, False)
