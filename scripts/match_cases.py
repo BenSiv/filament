@@ -306,7 +306,7 @@ def score_pair(uhr, mp, uhr_year):
         # Calculate height match score
         overlap = min(uhr_height[1], mp_height[1]) - max(uhr_height[0], mp_height[0])
         height_score = min(1.0, max(0.3, overlap / 20))
-        reasons.append(f"Height match")
+        reasons.append("Height match")
     
     # Calculate score components
     age_overlap = min(uhr_age[1], mp_age[1]) - max(uhr_age[0], mp_age[0])
@@ -324,8 +324,62 @@ def score_pair(uhr, mp, uhr_year):
             year_score = 0.6
         reasons.append(f"{years_diff}yr gap")
     
-    # Weighted score: age 30%, year 30%, height 20%, base 20%
-    score = age_score * 0.30 + year_score * 0.30 + height_score * 0.20 + 0.5 * 0.20
+    # Feature text matching (tattoos, scars, dental)
+    feature_score = 0.5  # Default neutral
+    uhr_features = uhr.get('featureText', '') or ''
+    mp_features = (mp.get('tattoos', '') or '') + ' ' + (mp.get('scarsMarks', '') or '')
+    
+    if uhr_features and mp_features:
+        # Simple word overlap for feature matching
+        uhr_words = set(uhr_features.lower().split()) - {'no', 'none', 'unknown', 'the', 'a', 'and', 'or'}
+        mp_words = set(mp_features.lower().split()) - {'no', 'none', 'unknown', 'the', 'a', 'and', 'or'}
+        
+        if uhr_words and mp_words:
+            overlap = uhr_words & mp_words
+            if overlap:
+                # Found matching keywords!
+                feature_score = min(1.0, 0.6 + len(overlap) * 0.1)
+                matching_words = list(overlap)[:3]
+                reasons.append(f"Feature match: {', '.join(matching_words)}")
+    
+    # Tattoo keyword matching (high value)
+    tattoo_bonus = 0
+    if uhr.get('hasTattoo'):
+        uhr_tattoo_text = uhr_features.lower()
+        mp_tattoo_text = (mp.get('tattoos', '') or '').lower()
+        
+        # Look for specific tattoo keywords
+        tattoo_keywords = ['eagle', 'cross', 'heart', 'skull', 'dragon', 'rose', 'star', 'name', 
+                          'tribal', 'butterfly', 'angel', 'snake', 'lion', 'tiger', 'flower']
+        
+        for keyword in tattoo_keywords:
+            if keyword in uhr_tattoo_text and keyword in mp_tattoo_text:
+                tattoo_bonus = 0.15
+                reasons.append(f"Tattoo: {keyword}")
+                break
+    
+    # Clothing text matching
+    clothing_score = 0.5
+    uhr_clothing = uhr.get('clothingText', '') or ''
+    mp_clothing = (mp.get('clothingDescription', '') or '') + ' ' + (mp.get('lastSeenWearing', '') or '')
+    
+    if uhr_clothing and mp_clothing:
+        # Look for brand matches
+        brands = ['nike', 'adidas', 'levis', 'wrangler', 'hanes', 'old navy', 'gap', 'champion']
+        for brand in brands:
+            if brand in uhr_clothing.lower() and brand in mp_clothing.lower():
+                clothing_score = 0.8
+                reasons.append(f"Clothing: {brand}")
+                break
+    
+    # Weighted score: age 20%, year 25%, height 15%, features 25%, clothing 15%
+    score = (age_score * 0.20 + 
+             year_score * 0.25 + 
+             height_score * 0.15 + 
+             feature_score * 0.25 + 
+             clothing_score * 0.15 +
+             tattoo_bonus)
+    
     return score, reasons
 
 
