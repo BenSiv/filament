@@ -1,25 +1,25 @@
-# BC Cold Case Hybrid RAG System - FILAMENT
+# FILAMENT: Cold Case Hybrid RAG System
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 > **F**orensic **I**ntelligence **L**inking **A**nd **M**atching via **E**mbedded **N**etwork **T**echnology
 
-A Hybrid Retrieval-Augmented Generation (RAG) system designed to connect "hard facts" (structured data) with "loose threads" (unstructured narrative) for cold case investigation in British Columbia.
+A Hybrid Retrieval-Augmented Generation (RAG) system designed to connect "hard facts" (structured data) with "loose threads" (unstructured narrative) for cold case investigation.
 
 ## 🎯 Mission
 
-Bridge the gap between verified forensic data and unstructured investigative narratives to identify potential matches between **unidentified human remains** and **missing persons** cases in BC.
+Bridge the gap between verified forensic data and unstructured investigative narratives to identify potential matches between **unidentified human remains** and **missing persons** cases across North America and beyond.
 
 ## 🏗️ Architecture Overview
 
 ```mermaid
 flowchart TB
     subgraph Sources["Phase 1: Data Sources"]
-        BCCS[BC Coroners Service]
+        NamUs[NamUs & Doe Network]
         NCMPUR[Canada's Missing]
-        GIS[BC Open Data GIS]
-        Legal[CanLII & BC Courts]
+        Geo[Geospatial Context<br/>(GIS/Open Data)]
+        Legal[Legal Records<br/>(CanLII/Courts)]
     end
     
     subgraph Processing["Phase 2: Analysis"]
@@ -116,7 +116,7 @@ python -m code.extraction.pipeline
 | Document | Description |
 |----------|-------------|
 | [Architecture](docs/architecture.md) | System design and data flow |
-| [Data Sources](docs/data_sources.md) | BC-specific data sources and integration |
+| [Data Sources](docs/data_sources.md) | Sources (NamUs, NCMPUR, etc.) and integration |
 | [Analysis Approaches](docs/analysis_approaches.md) | Extraction, graph, and vector search |
 | [Bioinformatics](docs/bioinformatics.md) | Phenotype and isotope analysis |
 | [Tech Stack](docs/tech_stack.md) | Technology choices and setup |
