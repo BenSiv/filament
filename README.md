@@ -24,22 +24,20 @@ flowchart LR
 
 ```
 filament/
-├── code/                    # Source code and automation scripts
-│   ├── extraction/          # Structured data extraction
-│   ├── graph/               # Knowledge graph operations
-│   ├── scrapers/            # Data source scrapers
-│   ├── scripts/             # Analysis and utility scripts
-│   └── search/              # Vector search & matching
-├── data/                    # Data directory
-│   ├── raw/                 # Raw data files
-│   ├── processed/           # Processed datasets
-│   └── reports/             # Generated analysis reports
-├── docs/                    # Documentation & pitches
-│   ├── architecture.md      # System design
-│   ├── contributing.md      # Contribution guidelines
-│   └── ...
-├── LICENSE.md
-└── README.md
+├── code/
+│   ├── devenv/              # Development environment configs
+│   ├── extraction/          # Structured data extraction logic
+│   ├── graph/               # Knowledge graph schema & ops
+│   ├── scrapers/            # Data ingestion scrapers
+│   ├── scripts/             # Operational scripts / CLI tools
+│   └── search/              # Vector search implementation
+├── data/
+│   ├── external/            # Third-party reference data
+│   ├── processed/           # Cleaned and canonicalized data
+│   ├── raw/                 # Immutable raw scrape data
+│   └── reports/             # Generated markdown reports
+├── docs/                    # Project documentation
+└── ...
 ```
 
 ## 🚀 Quick Start
