@@ -24,24 +24,22 @@ flowchart LR
 
 ```
 filament/
-├── docs/                    # Detailed documentation
-│   ├── architecture.md      # System architecture
-│   ├── data_sources.md      # Phase 1: Data sources
-│   ├── analysis_approaches.md # Phase 2: Analysis
-│   ├── bioinformatics.md    # Phase 3: Bio-analysis
-│   └── tech_stack.md        # Technology stack
-├── code/                    # Source code
+├── code/                    # Source code and automation scripts
 │   ├── extraction/          # Structured data extraction
 │   ├── graph/               # Knowledge graph operations
-│   ├── search/              # Vector search & matching
-│   └── scrapers/            # Data source scrapers
-├── data/                    # Data directory (gitignored)
+│   ├── scrapers/            # Data source scrapers
+│   ├── scripts/             # Analysis and utility scripts
+│   └── search/              # Vector search & matching
+├── data/                    # Data directory
 │   ├── raw/                 # Raw data files
 │   ├── processed/           # Processed datasets
-│   └── external/            # External reference data
-├── config/                  # Configuration files
-├── notebooks/               # Jupyter notebooks
-└── tests/                   # Test suite
+│   └── reports/             # Generated analysis reports
+├── docs/                    # Documentation & pitches
+│   ├── architecture.md      # System design
+│   ├── contributing.md      # Contribution guidelines
+│   └── ...
+├── LICENSE.md
+└── README.md
 ```
 
 ## 🚀 Quick Start
