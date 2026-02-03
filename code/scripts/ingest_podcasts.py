@@ -12,7 +12,7 @@ from pathlib import Path
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from src.scrapers.youtube_scraper import YouTubePodcastClient
+from code.scrapers.youtube_scraper import YouTubePodcastClient
 
 # Configure logging
 logging.basicConfig(

@@ -146,9 +146,20 @@ def parse_date(date_str):
 
 
 def get_date(case, field_names):
-    """Get date tuple from case."""
+    """Get date tuple from case with support for dot notation."""
     for field in field_names:
-        val = case.get(field)
+        val = case
+        # Handle dot notation (e.g. 'sighting.date')
+        if '.' in field:
+            for part in field.split('.'):
+                if isinstance(val, dict):
+                    val = val.get(part)
+                else:
+                    val = None
+                    break
+        else:
+            val = case.get(field)
+            
         if val:
             result = parse_date(val)
             if result:
@@ -162,14 +173,14 @@ def get_estimated_dod(uhr):
     DoD = DateFound - PMI
     Returns (dod_earliest, dod_latest) or timestamp objects.
     """
-    found_date_tuple = get_date(uhr, ['dateFound'])
+    found_date_tuple = get_date(uhr, ['dateFound', 'circumstances.dateFound'])
     if not found_date_tuple:
         return None, None
     
     found_dt = datetime(found_date_tuple[0], found_date_tuple[1], found_date_tuple[2])
     
     pmi_val = uhr.get('pmiVal')
-    pmi_unit = uhr.get('pmiUnit', '').lower()
+    pmi_unit = (uhr.get('pmiUnit') or '').lower()
     
     if not pmi_val:
         return found_dt, found_dt  # No PMI, assume found date is latest DoD
@@ -361,7 +372,7 @@ def score_pair(uhr, mp, uhr_date):
     # Date filter: MP must be missing BEFORE UHR found (full date comparison)
     # New: Use PMI for Estimated Date of Death (DoD)
     dod_min, dod_max = get_estimated_dod(uhr)
-    mp_date = get_date(mp, ['dateOfLastContact', 'dateMissing'])
+    mp_date = get_date(mp, ['dateOfLastContact', 'dateMissing', 'sighting.date'])
     
     if mp_date and dod_min and dod_max:
         mp_dt = datetime(mp_date[0], mp_date[1], mp_date[2])
@@ -450,7 +461,23 @@ def score_pair(uhr, mp, uhr_date):
             
     elif mp_date and uhr_date:
         # Fallback to Found Date
+        
+        # Calculate strict days difference
         days_diff = (uhr_date[0] - mp_date[0]) * 365 + (uhr_date[1] - mp_date[1]) * 30 + (uhr_date[2] - mp_date[2])
+        
+        # DEBUG for specific issue
+        if str(uhr.get('namus2Number')) == '4335' or str(uhr.get('idFormatted')) == 'UP4335':
+             if str(mp.get('namus2Number')) == '17595' or str(mp.get('idFormatted')) == 'MP17595':
+                 print(f"DEBUG CHECK: UP4335 vs MP17595")
+                 print(f"  UHR Raw Date Found: {uhr.get('circumstances', {}).get('dateFound')}")
+                 print(f"  MP Raw Date Missing: {mp.get('sighting', {}).get('date')}")
+                 print(f"  Parsed UHR Date: {uhr_date}")
+                 print(f"  Parsed MP Date: {mp_date}")
+                 print(f"  Days Diff: {days_diff}")
+        
+        if days_diff < 0:
+            # IMPOSSIBLE: Person went missing AFTER body was found
+            return None
         
         if days_diff <= 90:  # Within 3 months
             timeline_score = 1.0
@@ -617,10 +644,15 @@ def load_data():
         print(f"Loaded {len(bc_uhr)} BC UHR")
         data['uhr'].extend(bc_uhr)
     
-    namus_mp = load_json(f"{DATA_DIR}/namus_missing_summaries.json")
+    namus_mp = load_json(f"{DATA_DIR}/namus_missing_flat.json")
     if namus_mp:
-        print(f"Loaded {len(namus_mp)} NamUs Missing")
+        print(f"Loaded {len(namus_mp)} NamUs Missing (flat with details)")
         data['mp'].extend(namus_mp)
+    else:
+        namus_mp = load_json(f"{DATA_DIR}/namus_missing_summaries.json")
+        if namus_mp:
+            print(f"Loaded {len(namus_mp)} NamUs Missing (summaries)")
+            data['mp'].extend(namus_mp)
     
     rcmp = load_json(f"{DATA_DIR}/rcmp_missing_persons.json")
     if rcmp:

@@ -125,7 +125,7 @@ Commands:
 Examples:
     ./scripts/dev.sh up
     ./scripts/dev.sh logs postgres
-    ./scripts/dev.sh run -m src.scrapers.bccs
+    ./scripts/dev.sh run -m code.scrapers.bccs
 EOF
 }
 

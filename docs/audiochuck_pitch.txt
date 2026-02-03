@@ -1,0 +1,34 @@
+Subject: Leveraging AI to Uncover Leads in Cold Cases - Collaboration Opportunity
+
+Dear Audiochuck Team,
+
+My name is Ben Sivan, and I am the creator of Filament (Forensic Intelligence Linking And Matching via Embedded Network Technology), an open-source project dedicated to applying advanced data science to assist in cold case investigations. I have been a dedicated listener of many of your shows for about six years now, which has played a significant role in inspiring this work.
+
+Project Filament is a Hybrid RAG (Retrieval-Augmented Generation) system designed to bridge the gap between "hard facts" (forensic data) and "loose threads" (investigative narratives). By using Large Language Models to scan vast amounts of unstructured data, the system identifies potential matches and subtle connections that are incredibly difficult to spot with traditional manual review.
+
+Currently, I am benchmarking this system using unidentified human remains and missing persons cases across the United States and Canada, aggregating data from:
+- NamUs (National Missing and Unidentified Persons System)
+- Canada's Missing (NCMPUR)
+- The Doe Network
+- The Charley Project
+- Various public records including coroners' services, open government data (e.g., geographic context), legal records, and bioinformatics metadata.
+
+The Opportunity
+
+While the technology is proving powerful, I am limited by the scope of public datasets, a constraint I know you are familiar with. audiochuck has curated an immense library of deep, verified information and established trusted connections with law enforcement that public researchers simply do not have.
+
+I am writing to explore the possibility of collaboration or potential employment. I believe Filament's architecture could be adapted to your internal archives to act as a powerful AI force multiplier, specifically to:
+1. Ingest and index the vast amounts of unstructured case files and high volume of daily listener tips you receive.
+2. Weed out irrelevant or unconnected information efficiently.
+3. Highlight "loose threads" and generate fresh, high-quality leads that might otherwise go unnoticed.
+
+Important Distinction
+
+I want to emphasize that this technology does not replace traditional investigative work in any way. No algorithm can substitute for skilled fieldwork. There must always be a human in the loop applying highly critical thinking. Instead, Filament acts as a powerful force multiplier, allowing investigators to process information at a scale that was previously impossible, ensuring that no lead is lost in the noise.
+
+If you are interested in seeing how we can turn your data into new leads and better process your advocacy-based action, I would love to discuss this further. You can review the project's case study section here: https://github.com/BenSiv/filament
+
+Best regards,
+Ben Sivan
+[Phone Number]
+[Email Address]

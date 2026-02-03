@@ -8,7 +8,7 @@ import logging
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from src.scrapers.podscribe_scraper import PodscribeClient
+from code.scrapers.podscribe_scraper import PodscribeClient
 
 # Configure logging
 logging.basicConfig(

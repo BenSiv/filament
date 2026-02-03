@@ -57,7 +57,7 @@ filament/
 │   ├── analysis_approaches.md # Phase 2: Analysis
 │   ├── bioinformatics.md    # Phase 3: Bio-analysis
 │   └── tech_stack.md        # Technology stack
-├── src/                     # Source code
+├── code/                    # Source code
 │   ├── extraction/          # Structured data extraction
 │   ├── graph/               # Knowledge graph operations
 │   ├── search/              # Vector search & matching
@@ -105,10 +105,10 @@ cp .env.example .env
 # (See docs/tech_stack.md for setup instructions)
 
 # Initialize the database
-python -m src.db.init
+python -m code.db.init
 
 # Start the extraction pipeline
-python -m src.extraction.pipeline
+python -m code.extraction.pipeline
 ```
 
 ## 📚 Documentation
@@ -132,7 +132,7 @@ This system is designed with privacy as a core principle:
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+See [docs/contributing.md](docs/contributing.md) for guidelines on how to contribute to this project.
 
 ## 📄 License
 

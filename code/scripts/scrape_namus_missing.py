@@ -218,7 +218,7 @@ def fetch_case_details_batch(session, case_summaries, output_file, resume=True):
     
     with open(output_file, 'a') as f:
         for i, summary in enumerate(case_summaries):
-            case_id = summary.get('id')
+            case_id = summary.get('namus2Number') or summary.get('id')
             
             if not case_id or case_id in processed_ids:
                 continue
