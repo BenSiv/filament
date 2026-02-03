@@ -14,37 +14,10 @@ Bridge the gap between verified forensic data and unstructured investigative nar
 ## 🏗️ Architecture Overview
 
 ```mermaid
-flowchart TB
-    subgraph Sources["Phase 1: Data Sources"]
-        NamUs[NamUs & Doe Network]
-        NCMPUR[Canada's Missing]
-        Geo["Geospatial Context<br/>(GIS/Open Data)"]
-        Legal["Legal Records<br/>(CanLII/Courts)"]
-    end
-    
-    subgraph Processing["Phase 2: Analysis"]
-        Extract[Structured Extraction<br/>Unstract/LlamaIndex]
-        Graph[Knowledge Graph<br/>Neo4j/FalkorDB]
-        Vector[Vector Search<br/>pgvector]
-    end
-    
-    subgraph Intelligence["Phase 3: Bioinformatics"]
-        Phenotype[Phenotype Recommender]
-        Isotope[Isotope Analysis]
-    end
-    
-    subgraph Output["Results"]
-        Matches[Potential Matches]
-        Viz[Kepler.gl Visualization]
-    end
-    
-    Sources --> Extract
-    Extract --> Graph
-    Extract --> Vector
-    Graph --> Matches
-    Vector --> Matches
-    Intelligence --> Matches
-    Matches --> Viz
+flowchart LR
+    Data[Data Sources] --> Embed[Embeddings & Indexing]
+    Embed --> Match[Matching Engine]
+    Match --> Leads[Top Leads]
 ```
 
 ## 📁 Project Structure
