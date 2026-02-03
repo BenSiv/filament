@@ -18,8 +18,8 @@ flowchart TB
     subgraph Sources["Phase 1: Data Sources"]
         NamUs[NamUs & Doe Network]
         NCMPUR[Canada's Missing]
-        Geo[Geospatial Context<br/>(GIS/Open Data)]
-        Legal[Legal Records<br/>(CanLII/Courts)]
+        Geo["Geospatial Context<br/>(GIS/Open Data)"]
+        Legal["Legal Records<br/>(CanLII/Courts)"]
     end
     
     subgraph Processing["Phase 2: Analysis"]
