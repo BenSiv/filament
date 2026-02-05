@@ -12,7 +12,7 @@ from pathlib import Path
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from code.scrapers.podscribe_scraper import PodscribeClient
+from core.scrapers.podscribe_scraper import PodscribeClient
 
 # Configure logging
 logging.basicConfig(

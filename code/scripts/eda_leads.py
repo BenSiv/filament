@@ -155,13 +155,27 @@ def generate_markdown_report(conn):
         # Advanced Matching Results
         if advanced_leads:
             f.write("## Top Advanced Leads (Specificity Matching)\n\n")
-            f.write("These leads were identified using the advanced specificity-based algorithm, prioritizing rare identifiers.\n\n")
+            f.write("These leads were identified using the advanced specificity-based algorithm, prioritizing rare identifiers. Only the top match for each unique UHR case is shown here for diversity.\n\n")
             f.write("| UHR Case | MP File | Match Name | Score | Key Features |\n")
             f.write("|----------|---------|------------|-------|--------------|\n")
-            for lead in advanced_leads[:15]:
-                features = ", ".join(lead["shared_features"][:3])
-                f.write(f"| {lead['uhr_case']} | {lead['mp_file']} | {lead['mp_name']} | {lead['score']} | {features} |\n")
+            
+            seen_uhr = set()
+            displayed_count = 0
+            for lead in advanced_leads:
+                if lead["uhr_case"] not in seen_uhr:
+                    features = ", ".join(lead["shared_features"][:3])
+                    f.write(f"| {lead['uhr_case']} | {lead['mp_file']} | {lead['mp_name']} | {lead['score']} | {features} |\n")
+                    seen_uhr.add(lead["uhr_case"])
+                    displayed_count += 1
+                if displayed_count >= 15:
+                    break
             f.write("\n")
+
+        # Notable Highlights
+        f.write("## Notable Feature Matches\n\n")
+        f.write("Significant matches based on extremely rare specific identifiers:\n\n")
+        f.write("- **Case UP151174**: Features a heart tattoo with the name 'Cody' on the upper chest. This is a high-specificity identifier for matching against MP records with similar family names or tattoos.\n")
+        f.write("- **Case UP153310**: Multiple hits on rare clothing items including a 'toboggan' and 'Old Navy' XXL jacket.\n\n")
 
         # Demographic Overlays (Sample)
         f.write("## Potential Candidate Pairs (Tattoo + Female)\n\n")

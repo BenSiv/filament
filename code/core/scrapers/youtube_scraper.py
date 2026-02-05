@@ -9,7 +9,7 @@ import logging
 import scrapetube
 from youtube_transcript_api import YouTubeTranscriptApi
 
-from code.extraction.podcasts import PodcastTranscript
+from core.extraction.podcasts import PodcastTranscript
 
 logger = logging.getLogger(__name__)
 

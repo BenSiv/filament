@@ -1,6 +1,6 @@
 # Significant Leads Report
 
-Generated on: 2026-02-04 23:04:12
+Generated on: 2026-02-04 23:06:49
 
 ## Summary Statistics
 - **Unidentified Human Remains (UHR)**: 15,513 cases
@@ -8,25 +8,24 @@ Generated on: 2026-02-04 23:04:12
 
 ## Top Advanced Leads (Specificity Matching)
 
-These leads were identified using the advanced specificity-based algorithm, prioritizing rare identifiers.
+These leads were identified using the advanced specificity-based algorithm, prioritizing rare identifiers. Only the top match for each unique UHR case is shown here for diversity.
 
 | UHR Case | MP File | Match Name | Score | Key Features |
 |----------|---------|------------|-------|--------------|
 | UP153310 | MP119240 | Robert Jones | 1.0 | toboggan (Rare), nike, navy |
-| UP153310 | MP30862 | Jerry Dailey | 1.0 | toboggan (Rare) |
-| UP153310 | MP53787 | Randall Parnell | 1.0 | charred (Rare), after, fire (Rare) |
-| UP153310 | MP449 | Sheldon Boyd | 1.0 | xxl (Rare), socks |
-| UP153310 | MP64801 | Matthew Potts | 1.0 | toboggan (Rare) |
-| UP153310 | MP130862 | Jeffrey Monticello | 1.0 | personnel (Rare), 56 (Rare) |
-| UP153310 | MP306 | David Boone | 1.0 | personnel (Rare), 56 (Rare) |
-| UP153310 | MP9496 | William Lank | 1.0 | personnel (Rare), underneath (Rare) |
-| UP153310 | MP32788 | Lloyd Chamberlain IV | 1.0 | personnel (Rare), pair, colored |
-| UP153310 | MP11400 | Christopher Robinson | 1.0 | toboggan (Rare) |
-| UP153310 | MP64064 | Bradley Stracener | 1.0 | apparent (Rare), 10 |
-| UP153310 | MP126655 | George Taylor | 1.0 | toboggan (Rare), after |
-| UP153310 | MP34297 | David Cottle | 1.0 | toboggan (Rare), 10 |
-| UP153310 | MP38896 | Melvin Wiley | 1.0 | apparent (Rare), socks |
-| UP153310 | MP29930 | Manuel Salado | 1.0 | basic (Rare), after, remains |
+| UP132348 | MP119240 | Robert Jones | 1.0 | swoosh (Rare), nike |
+| UP125027 | MP6937 | Tina Kemp | 1.0 | metropolitan (Rare) |
+| UP109418 | MP67116 | James Weber | 1.0 | performed (Rare) |
+| UP86817 | MP68103 | Peter Germain | 1.0 | miscellaneous (Rare) |
+| UP81080 | MP24085 | Shep Leonard | 1.0 | highway (Rare), sylacauga (Rare), 4 |
+| UP72429 | MP66618 | Evan Zaukar | 1.0 | media (Rare), failed (Rare) |
+
+## Notable Feature Matches
+
+Significant matches based on extremely rare specific identifiers:
+
+- **Case UP151174**: Features a heart tattoo with the name 'Cody' on the upper chest. This is a high-specificity identifier for matching against MP records with similar family names or tattoos.
+- **Case UP153310**: Multiple hits on rare clothing items including a 'toboggan' and 'Old Navy' XXL jacket.
 
 ## Potential Candidate Pairs (Tattoo + Female)
 

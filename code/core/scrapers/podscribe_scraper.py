@@ -13,7 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-from code.extraction.podcasts import PodcastTranscript
+from core.extraction.podcasts import PodcastTranscript
 
 logger = logging.getLogger(__name__)
 
