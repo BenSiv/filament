@@ -131,10 +131,15 @@ def load_uhr(conn):
         # For simplicity, using idFormatted as unique key and a simple hash/id for PK.
         internal_id = str(case.get('id')) 
 
+        subject_desc = case.get('subjectDescription', {})
+        sex = subject_desc.get('sex', {}).get('name')
+        age_min = subject_desc.get('estimatedAgeFrom')
+        age_max = subject_desc.get('estimatedAgeTo')
+
         cursor.execute("""
             INSERT OR REPLACE INTO unidentified_cases 
-            (id, case_number, source, discovery_date, description, discovery_lat, discovery_lon, raw_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (id, case_number, source, discovery_date, description, discovery_lat, discovery_lon, estimated_age_min, estimated_age_max, estimated_sex, raw_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             internal_id,
             case_num,
@@ -143,6 +148,9 @@ def load_uhr(conn):
             desc,
             lat,
             lon,
+            age_min,
+            age_max,
+            sex,
             json.dumps(case)
         ))
         count += 1
@@ -178,10 +186,13 @@ def load_mp(conn):
         
         internal_id = str(case.get('id'))
 
+        sex = case.get('subjectDescription', {}).get('sex', {}).get('name')
+        age = ident.get('computedMissingMinAge')
+
         cursor.execute("""
             INSERT OR REPLACE INTO missing_persons 
-            (id, file_number, source, name, last_seen_date, description, last_seen_lat, last_seen_lon, raw_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, file_number, source, name, last_seen_date, description, last_seen_lat, last_seen_lon, sex, age_at_disappearance, raw_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             internal_id,
             case_num,
@@ -191,6 +202,8 @@ def load_mp(conn):
             desc,
             lat,
             lon,
+            sex,
+            age,
             json.dumps(case)
         ))
         count += 1

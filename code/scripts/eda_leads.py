@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import datetime
 
 DB_PATH = "data/filament.db"
+REPORT_PATH = "data/reports/significant_leads.md"
 
 def get_connection():
     return sqlite3.connect(DB_PATH)
@@ -126,6 +127,68 @@ def analyze_candidate_overlaps(conn):
         print(f"  {l[0]}: {l[1]}, Age {l[3]}, Desc: {l[4][:100]}...")
     print()
 
+def generate_markdown_report(conn):
+    print(f"Generating Markdown report at {REPORT_PATH}...")
+    
+    cursor = conn.cursor()
+    
+    with open(REPORT_PATH, 'w') as f:
+        f.write("# Significant Leads Report\n\n")
+        f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        
+        # Summary Stats
+        f.write("## Summary Statistics\n")
+        cursor.execute("SELECT count(*) FROM unidentified_cases")
+        uhr_count = cursor.fetchone()[0]
+        cursor.execute("SELECT count(*) FROM missing_persons")
+        mp_count = cursor.fetchone()[0]
+        f.write(f"- **Unidentified Human Remains (UHR)**: {uhr_count:,} cases\n")
+        f.write(f"- **Missing Persons (MP)**: {mp_count:,} cases\n\n")
+        
+        # Demographic Overlays (Sample)
+        f.write("## Potential Candidate Pairs (Tattoo + Female)\n\n")
+        f.write("### Sample UHR Females with Tattoos\n\n")
+        f.write("| Case Number | Sex | Age Range | Description snippet |\n")
+        f.write("|-------------|-----|-----------|---------------------|\n")
+        
+        uhr_query = """
+            SELECT case_number, estimated_sex, estimated_age_min, estimated_age_max, description 
+            FROM unidentified_cases 
+            WHERE description LIKE '%tattoo%' AND estimated_sex = 'Female'
+            LIMIT 10
+        """
+        cursor.execute(uhr_query)
+        for row in cursor.fetchall():
+            desc = row[4][:100].replace('\n', ' ') + "..."
+            f.write(f"| {row[0]} | {row[1]} | {row[2]}-{row[3]} | {desc} |\n")
+        
+        f.write("\n### Sample MP Females with Tattoos\n\n")
+        f.write("| File Number | Name | Age | Description snippet |\n")
+        f.write("|-------------|------|-----|---------------------|\n")
+        
+        mp_query = """
+            SELECT file_number, name, age_at_disappearance, description 
+            FROM missing_persons 
+            WHERE description LIKE '%tattoo%' AND sex = 'Female'
+            LIMIT 10
+        """
+        cursor.execute(mp_query)
+        for row in cursor.fetchall():
+            desc = row[3][:100].replace('\n', ' ') + "..."
+            f.write(f"| {row[0]} | {row[1]} | {row[2]} | {desc} |\n")
+            
+        f.write("\n## Keyword Analysis\n")
+        f.write("| Keyword | UHR Mentions | MP Mentions |\n")
+        f.write("|---------|--------------|-------------|\n")
+        for kw in ['tattoo', 'scar', 'glasses', 'denture', 'prosthetic']:
+            cursor.execute("SELECT count(*) FROM unidentified_cases WHERE description LIKE ?", (f'%{kw}%',))
+            uhr_mentions = cursor.fetchone()[0]
+            cursor.execute("SELECT count(*) FROM missing_persons WHERE description LIKE ?", (f'%{kw}%',))
+            mp_mentions = cursor.fetchone()[0]
+            f.write(f"| {kw} | {uhr_mentions} | {mp_mentions} |\n")
+
+    print("Report generated successfully.")
+
 def main():
     conn = get_connection()
     try:
@@ -133,6 +196,7 @@ def main():
         analyze_temporal_trends(conn)
         analyze_keyword_leads(conn, ['tattoo', 'scar', 'glasses', 'denture', 'prosthetic'])
         analyze_candidate_overlaps(conn)
+        generate_markdown_report(conn)
     finally:
         conn.close()
 
