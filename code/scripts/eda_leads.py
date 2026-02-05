@@ -2,6 +2,7 @@
 import sqlite3
 import json
 import re
+import os
 from collections import Counter
 from datetime import datetime
 
@@ -130,6 +131,12 @@ def analyze_candidate_overlaps(conn):
 def generate_markdown_report(conn):
     print(f"Generating Markdown report at {REPORT_PATH}...")
     
+    # Load advanced leads if available
+    advanced_leads = []
+    if os.path.exists("data/processed/leads_advanced.json"):
+        with open("data/processed/leads_advanced.json", "r") as f:
+            advanced_leads = json.load(f)
+    
     cursor = conn.cursor()
     
     with open(REPORT_PATH, 'w') as f:
@@ -145,6 +152,17 @@ def generate_markdown_report(conn):
         f.write(f"- **Unidentified Human Remains (UHR)**: {uhr_count:,} cases\n")
         f.write(f"- **Missing Persons (MP)**: {mp_count:,} cases\n\n")
         
+        # Advanced Matching Results
+        if advanced_leads:
+            f.write("## Top Advanced Leads (Specificity Matching)\n\n")
+            f.write("These leads were identified using the advanced specificity-based algorithm, prioritizing rare identifiers.\n\n")
+            f.write("| UHR Case | MP File | Match Name | Score | Key Features |\n")
+            f.write("|----------|---------|------------|-------|--------------|\n")
+            for lead in advanced_leads[:15]:
+                features = ", ".join(lead["shared_features"][:3])
+                f.write(f"| {lead['uhr_case']} | {lead['mp_file']} | {lead['mp_name']} | {lead['score']} | {features} |\n")
+            f.write("\n")
+
         # Demographic Overlays (Sample)
         f.write("## Potential Candidate Pairs (Tattoo + Female)\n\n")
         f.write("### Sample UHR Females with Tattoos\n\n")

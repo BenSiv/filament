@@ -1,10 +1,32 @@
 # Significant Leads Report
 
-Generated on: 2026-02-04 22:58:42
+Generated on: 2026-02-04 23:04:12
 
 ## Summary Statistics
 - **Unidentified Human Remains (UHR)**: 15,513 cases
 - **Missing Persons (MP)**: 26,080 cases
+
+## Top Advanced Leads (Specificity Matching)
+
+These leads were identified using the advanced specificity-based algorithm, prioritizing rare identifiers.
+
+| UHR Case | MP File | Match Name | Score | Key Features |
+|----------|---------|------------|-------|--------------|
+| UP153310 | MP119240 | Robert Jones | 1.0 | toboggan (Rare), nike, navy |
+| UP153310 | MP30862 | Jerry Dailey | 1.0 | toboggan (Rare) |
+| UP153310 | MP53787 | Randall Parnell | 1.0 | charred (Rare), after, fire (Rare) |
+| UP153310 | MP449 | Sheldon Boyd | 1.0 | xxl (Rare), socks |
+| UP153310 | MP64801 | Matthew Potts | 1.0 | toboggan (Rare) |
+| UP153310 | MP130862 | Jeffrey Monticello | 1.0 | personnel (Rare), 56 (Rare) |
+| UP153310 | MP306 | David Boone | 1.0 | personnel (Rare), 56 (Rare) |
+| UP153310 | MP9496 | William Lank | 1.0 | personnel (Rare), underneath (Rare) |
+| UP153310 | MP32788 | Lloyd Chamberlain IV | 1.0 | personnel (Rare), pair, colored |
+| UP153310 | MP11400 | Christopher Robinson | 1.0 | toboggan (Rare) |
+| UP153310 | MP64064 | Bradley Stracener | 1.0 | apparent (Rare), 10 |
+| UP153310 | MP126655 | George Taylor | 1.0 | toboggan (Rare), after |
+| UP153310 | MP34297 | David Cottle | 1.0 | toboggan (Rare), 10 |
+| UP153310 | MP38896 | Melvin Wiley | 1.0 | apparent (Rare), socks |
+| UP153310 | MP29930 | Manuel Salado | 1.0 | basic (Rare), after, remains |
 
 ## Potential Candidate Pairs (Tattoo + Female)
 
