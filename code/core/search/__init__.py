@@ -10,13 +10,13 @@ This module handles:
 from .embeddings import EmbeddingModel
 from .vector_store import VectorStore
 from .semantic_search import SemanticSearch
-from .specificity_search import SpecificityMatcher
+from .specificity_search import CompositeMatcher
 from .narrative_generator import NarrativeGenerator
 
 __all__ = [
     "EmbeddingModel",
     "VectorStore",
     "SemanticSearch",
-    "SpecificityMatcher",
+    "CompositeMatcher",
     "NarrativeGenerator",
 ]

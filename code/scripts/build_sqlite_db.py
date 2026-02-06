@@ -15,6 +15,11 @@ def init_db(conn):
     
     # Enable JSON support (built-in for modern SQLite)
     
+    # Drop existing tables to ensure clean schema with new columns
+    print("Dropping existing tables for clean rebuild...")
+    cursor.execute("DROP TABLE IF EXISTS unidentified_cases;")
+    cursor.execute("DROP TABLE IF EXISTS missing_persons;")
+    
     # Unidentified Cases Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS unidentified_cases (
@@ -28,6 +33,9 @@ def init_db(conn):
         estimated_age_min INTEGER,
         estimated_age_max INTEGER,
         estimated_sex TEXT,
+        race TEXT,
+        dna_status TEXT,
+        dental_status TEXT,
         description TEXT,
         raw_data TEXT, -- JSON string
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -48,12 +56,20 @@ def init_db(conn):
         last_seen_lon REAL,
         age_at_disappearance INTEGER,
         sex TEXT,
+        race TEXT,
+        dna_status TEXT,
+        dental_status TEXT,
         description TEXT,
         raw_data TEXT, -- JSON string
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     """)
+
+    # Indexes for performance
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_mp_date_sex ON missing_persons(last_seen_date, sex);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_mp_geo ON missing_persons(last_seen_lat, last_seen_lon);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_uhr_geo ON unidentified_cases(discovery_lat, discovery_lon);")
     
     conn.commit()
     print(f"Initialized SQLite database at {DB_PATH}")
@@ -133,13 +149,23 @@ def load_uhr(conn):
 
         subject_desc = case.get('subjectDescription', {})
         sex = subject_desc.get('sex', {}).get('name')
+        race = subject_desc.get('primaryEthnicity', {}).get('name')
+        if not race and 'ethnicities' in subject_desc:
+            eths = subject_desc['ethnicities']
+            if eths: race = eths[0].get('name')
+            
         age_min = subject_desc.get('estimatedAgeFrom')
         age_max = subject_desc.get('estimatedAgeTo')
+        
+        evidence = case.get('evidence', {})
+        dna_status = evidence.get('dna')
+        dental_status = evidence.get('dental')
 
         cursor.execute("""
             INSERT OR REPLACE INTO unidentified_cases 
-            (id, case_number, source, discovery_date, description, discovery_lat, discovery_lon, estimated_age_min, estimated_age_max, estimated_sex, raw_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, case_number, source, discovery_date, description, discovery_lat, discovery_lon, 
+             estimated_age_min, estimated_age_max, estimated_sex, race, dna_status, dental_status, raw_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             internal_id,
             case_num,
@@ -151,6 +177,9 @@ def load_uhr(conn):
             age_min,
             age_max,
             sex,
+            race,
+            dna_status,
+            dental_status,
             json.dumps(case)
         ))
         count += 1
@@ -186,13 +215,24 @@ def load_mp(conn):
         
         internal_id = str(case.get('id'))
 
-        sex = case.get('subjectDescription', {}).get('sex', {}).get('name')
+        subject_desc = case.get('subjectDescription', {})
+        sex = subject_desc.get('sex', {}).get('name')
+        race = subject_desc.get('primaryEthnicity', {}).get('name')
+        if not race and 'ethnicities' in subject_desc:
+            eths = subject_desc['ethnicities']
+            if eths: race = eths[0].get('name')
+
         age = ident.get('computedMissingMinAge')
+        
+        evidence = case.get('evidence', {})
+        dna_status = evidence.get('dna')
+        dental_status = evidence.get('dental')
 
         cursor.execute("""
             INSERT OR REPLACE INTO missing_persons 
-            (id, file_number, source, name, last_seen_date, description, last_seen_lat, last_seen_lon, sex, age_at_disappearance, raw_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, file_number, source, name, last_seen_date, description, last_seen_lat, last_seen_lon, 
+             sex, race, dna_status, dental_status, age_at_disappearance, raw_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             internal_id,
             case_num,
@@ -203,6 +243,9 @@ def load_mp(conn):
             lat,
             lon,
             sex,
+            race,
+            dna_status,
+            dental_status,
             age,
             json.dumps(case)
         ))

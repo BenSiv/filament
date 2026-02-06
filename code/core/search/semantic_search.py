@@ -15,24 +15,24 @@ class SemanticSearch:
     Combines embedding generation with vector store search.
     
     Usage:
-        search = SemanticSearch(connection_string)
+        search = SemanticSearch(db_path)
         results = search.find_similar("blue hooded sweatshirt")
     """
     
     def __init__(
         self,
-        connection_string: str,
+        db_path: str,
         model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
     ):
         """
         Initialize semantic search.
         
         Args:
-            connection_string: PostgreSQL connection string.
+            db_path: Path to the SQLite database.
             model_name: Embedding model name.
         """
         self.embedder = EmbeddingModel(model_name)
-        self.store = VectorStore(connection_string)
+        self.store = VectorStore(db_path)
     
     def index_document(
         self,

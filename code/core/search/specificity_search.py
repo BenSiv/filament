@@ -5,11 +5,21 @@ import re
 import math
 from collections import Counter
 from typing import List, Dict, Any, Tuple, Set
+from concurrent.futures import ProcessPoolExecutor
+import os
 
-class SpecificityMatcher:
+from core.utils.geo_utils import haversine_distance, calculate_geo_score
+
+# Pre-compile regex for speed
+WORD_PATTERN = re.compile(r'\w+')
+
+class CompositeMatcher:
     """
-    Advanced matching logic based on keyword specificity (IDF-like scoring).
-    Surfaces leads by prioritizing rare identifiers over common ones.
+    Advanced matching engine that combines multiple scoring factors:
+    - Identity Core (Age, Sex, Race)
+    - Keyword Specificity (TF-IDF overlap)
+    - Geographic Proximity (Haversine decay)
+    - Biological Evidence (DNA/Dental status)
     """
     
     def __init__(self, db_path: str):
@@ -23,125 +33,220 @@ class SpecificityMatcher:
             'sighting', 'last', 'seen', 'contact', 'date', 'remains', 'charred', 'skeletonized',
             'burned', 'discovered', 'debris', 'underneath', 'after', 'before', 'around'
         }
-        
-    def get_word_frequencies(self, conn: sqlite3.Connection, table_name: str, column_name: str) -> Tuple[Counter, int]:
-        """Calculate document frequency for words in a table/column."""
+        self.idf_cache = {}
+        self.uhr_total = 0
+        self.mp_total = 0
+        self.uhr_df = Counter()
+        self.mp_df = Counter()
+
+    def _get_words(self, text: str) -> Set[str]:
+        if not text: return set()
+        return set(WORD_PATTERN.findall(text.lower()))
+
+    def load_stats(self, conn: sqlite3.Connection):
+        """Pre-calculate global statistics for TF-IDF."""
+        print("Loading global TF-IDF statistics")
         cursor = conn.cursor()
-        cursor.execute(f"SELECT {column_name} FROM {table_name}")
         
-        doc_count = 0
-        df = Counter()
-        
-        for row in cursor.fetchall():
+        # UHR stats
+        cursor.execute("SELECT description FROM unidentified_cases")
+        for i, row in enumerate(cursor.fetchall()):
             if row[0]:
-                doc_count += 1
-                words = set(re.findall(r'\w+', row[0].lower()))
+                self.uhr_total += 1
+                words = self._get_words(row[0])
                 for word in words:
-                    df[word] += 1
-                    
-        return df, doc_count
+                    self.uhr_df[word] += 1
+            if i % 5000 == 0 and i > 0: print(f"  Summarized {i} UHR cases")
+        
+        # MP stats
+        cursor.execute("SELECT description FROM missing_persons")
+        for i, row in enumerate(cursor.fetchall()):
+            if row[0]:
+                self.mp_total += 1
+                words = self._get_words(row[0]) - self.stop_words
+                for word in words:
+                    self.mp_df[word] += 1
+            if i % 10000 == 0 and i > 0: print(f"  Summarized {i} MP cases")
+        print(f"Stats loaded. UHR: {self.uhr_total}, MP: {self.mp_total}")
 
     def calculate_specificity(self, word: str, df: Counter, total_docs: int) -> float:
-        """Calculate specificity score (log-inverse frequency)."""
+        if word in self.stop_words: return 0.0
         count = df.get(word, 0)
-        if count == 0: return 2.0
+        if count <= 0: return 2.0
         return math.log10(total_docs / count)
 
     def score_text_overlap(
         self, 
-        text1: str, 
-        text2: str, 
-        df1: Counter, 
-        df2: Counter, 
-        total1: int, 
-        total2: int
+        words1: Set[str], 
+        words2: Set[str], 
     ) -> Tuple[float, List[str]]:
-        """Score overlap between two texts, weighting by specificity."""
-        if not text1 or not text2:
-            return 0.0, []
-            
-        words1 = set(re.findall(r'\w+', text1.lower())) - self.stop_words
-        words2 = set(re.findall(r'\w+', text2.lower())) - self.stop_words
-        
         common = words1 & words2
         if not common:
             return 0.0, []
-            
+        
         total_score = 0.0
         matched_features = []
-        
         for word in common:
-            spec1 = self.calculate_specificity(word, df1, total1)
-            spec2 = self.calculate_specificity(word, df2, total2)
-            specificity = (spec1 + spec2) / 2
+            if word not in self.idf_cache:
+                spec1 = self.calculate_specificity(word, self.uhr_df, self.uhr_total)
+                spec2 = self.calculate_specificity(word, self.mp_df, self.mp_total)
+                self.idf_cache[word] = (spec1 + spec2) / 2
             
-            # Exponentially weight specificity to favor rare words
-            weight = math.pow(10, specificity - 1.0) if specificity > 1.0 else specificity
-            total_score += weight
-            
+            specificity = self.idf_cache[word]
+            total_score += specificity
             if specificity > 1.8:
                 matched_features.append(f"{word} (Rare)")
             elif specificity > 1.2:
                 matched_features.append(word)
-                
-        return min(1.0, total_score / 50), matched_features
+        
+        return min(1.0, total_score / 35), matched_features
+
+    def calculate_phenotypic_score(self, u_race: str, m_race: str) -> float:
+        score = 0.0
+        if u_race and m_race:
+            score += 0.5 if u_race == m_race else 0.0
+        return min(1.0, score * 2)
+
+    def calculate_bio_multiplier(self, u_dna: str, u_dental: str, m_dna: str, m_dental: str) -> float:
+        dna_ready = u_dna == 'Complete' and m_dna == 'Complete'
+        dental_ready = u_dental == 'Complete' and m_dental == 'Complete'
+        if dna_ready or dental_ready:
+            return 1.5
+        return 1.0
 
     def find_leads(
         self, 
-        min_score: float = 0.4, 
-        limit: int = 200, 
-        uhr_min_desc_len: int = 50
+        min_score: float = 0.35, 
+        limit: int = 200,
+        parallel: bool = True
     ) -> List[Dict[str, Any]]:
-        """Perform batch matching across the database to find strong leads."""
         conn = sqlite3.connect(self.db_path)
         try:
-            uhr_df, uhr_total = self.get_word_frequencies(conn, "unidentified_cases", "description")
-            mp_df, mp_total = self.get_word_frequencies(conn, "missing_persons", "description")
+            self.load_stats(conn)
             
             cursor = conn.cursor()
-            cursor.execute(f"""
-                SELECT id, case_number, estimated_sex, estimated_age_min, estimated_age_max, discovery_date, description 
+            cursor.execute("""
+                SELECT case_number, estimated_sex, estimated_age_min, estimated_age_max, 
+                       discovery_date, description, discovery_lat, discovery_lon, race, dna_status, dental_status
                 FROM unidentified_cases 
-                WHERE length(description) > {uhr_min_desc_len}
             """)
             uhr_cases = cursor.fetchall()
             
-            all_leads = []
+            # Pre-process UHR cases (sets of words)
+            processed_uhr = []
             for uhr in uhr_cases:
-                u_id, u_num, u_sex, u_age_min, u_age_max, u_date, u_desc = uhr
+                u_num, u_sex, u_age_min, u_age_max, u_date, u_desc, u_lat, u_lon, u_race, u_dna, u_dental = uhr
+                u_words = self._get_words(u_desc) - self.stop_words
                 
-                query = "SELECT id, file_number, name, sex, age_at_disappearance, last_seen_date, description FROM missing_persons WHERE (last_seen_date IS NULL OR last_seen_date <= ?)"
-                params = [u_date if u_date else '9999-12-31']
+                processed_uhr.append({
+                    "u_num": u_num, "u_sex": u_sex, "u_age_min": u_age_min, "u_age_max": u_age_max,
+                    "u_date": u_date, "u_desc": u_desc, "u_words": u_words, "u_lat": u_lat, "u_lon": u_lon,
+                    "u_race": u_race, "u_dna": u_dna, "u_dental": u_dental
+                })
+
+            # Stats to share with workers (to avoid recalculating IDF)
+            stats = {
+                "uhr_df": self.uhr_df, "mp_df": self.mp_df,
+                "uhr_total": self.uhr_total, "mp_total": self.mp_total,
+                "idf_cache": self.idf_cache
+            }
+
+            if parallel:
+                num_workers = os.cpu_count() or 4
+                chunk_size = max(1, len(processed_uhr) // num_workers)
+                chunks = [processed_uhr[i:i + chunk_size] for i in range(0, len(processed_uhr), chunk_size)]
                 
-                if u_sex and u_sex != 'Uncertain':
-                    query += " AND (sex IS NULL OR sex = 'Unknown' OR sex = 'Uncertain' OR sex = ?)"
-                    params.append(u_sex)
-                    
-                cursor.execute(query, params)
-                candidates = cursor.fetchall()
-                
-                for cand in candidates:
-                    m_id, m_num, m_name, m_sex, m_age, m_date, m_desc = cand
-                    
-                    if u_age_min and m_age and abs(u_age_min - m_age) > 20:
-                        continue
-                        
-                    score, features = self.score_text_overlap(u_desc, m_desc, uhr_df, mp_df, uhr_total, mp_total)
-                    
-                    if score >= min_score:
-                        all_leads.append({
-                            "uhr_case": u_num,
-                            "mp_file": m_num,
-                            "mp_name": m_name,
-                            "score": round(score, 3),
-                            "shared_features": features,
-                            "uhr_desc_preview": u_desc[:200] + "...",
-                            "mp_desc_preview": m_desc[:200] + "..."
-                        })
-                
-                if len(all_leads) > limit * 5: break # Partial safety cap
+                all_leads = []
+                with ProcessPoolExecutor(max_workers=num_workers) as executor:
+                    # Pass stats dictionary to workers
+                    futures = [executor.submit(self._match_chunk, chunk, stats, min_score) for chunk in chunks]
+                    for future in futures:
+                        all_leads.extend(future.result())
+            else:
+                all_leads = self._match_chunk(processed_uhr, stats, min_score)
                 
             all_leads.sort(key=lambda x: x['score'], reverse=True)
             return all_leads[:limit]
         finally:
             conn.close()
+
+    def _match_chunk(self, uhr_subset: List[Dict[str, Any]], stats: Dict[str, Any], min_score: float) -> List[Dict[str, Any]]:
+        """Worker function for parallel matching with database streaming."""
+        # Update worker instance with shared stats
+        self.uhr_df = stats["uhr_df"]
+        self.mp_df = stats["mp_df"]
+        self.uhr_total = stats["uhr_total"]
+        self.mp_total = stats["mp_total"]
+        self.idf_cache = stats["idf_cache"]
+        
+        results = []
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            for u in uhr_subset:
+                u_date_limit = u["u_date"] if u["u_date"] else '9999-12-31'
+                
+                # Build SQL filter for candidates
+                # Initial filter: Date, Sex, and Bounding Box
+                query = """
+                    SELECT file_number, name, age_at_disappearance, last_seen_date, 
+                           description, last_seen_lat, last_seen_lon, sex, race, dna_status, dental_status
+                    FROM missing_persons
+                    WHERE (last_seen_date IS NULL OR last_seen_date <= ?)
+                """
+                params = [u_date_limit]
+                
+                if u["u_sex"] and u["u_sex"] not in ('Uncertain', 'Unknown'):
+                    query += " AND (sex IS NULL OR sex IN ('Unknown', 'Uncertain', ?))"
+                    params.append(u["u_sex"])
+                
+                if u["u_lat"] is not None and u["u_lon"] is not None:
+                    query += " AND (last_seen_lat IS NULL OR (last_seen_lat BETWEEN ? AND ? AND last_seen_lon BETWEEN ? AND ?))"
+                    params.extend([u["u_lat"] - 8, u["u_lat"] + 8, u["u_lon"] - 8, u["u_lon"] + 8])
+
+                cursor.execute(query, params)
+                
+                for row in cursor.fetchall():
+                    m_num, m_name, m_age, m_date, m_desc, m_lat, m_lon, m_sex, m_race, m_dna, m_dental = row
+                    
+                    # 4. Age Filter (Hard exclusion)
+                    if u["u_age_min"] and m_age and (m_age < u["u_age_min"] - 10 or (u["u_age_max"] and m_age > u["u_age_max"] + 10)):
+                        continue
+                    
+                    # 5. Keyword Overlap (TF-IDF)
+                    m_words = self._get_words(m_desc) - self.stop_words
+                    text_score, features = self.score_text_overlap(u["u_words"], m_words)
+                    
+                    # 6. Geographic Decay
+                    dist = haversine_distance(u["u_lat"], u["u_lon"], m_lat, m_lon)
+                    geo_score = calculate_geo_score(dist)
+                    
+                    # 7. Phenotypic Matching
+                    pheno_score = self.calculate_phenotypic_score(u["u_race"], m_race)
+                    
+                    # 8. Composite Scoring
+                    composite_score = (text_score * 0.4) + (geo_score * 0.3) + (pheno_score * 0.3)
+                    
+                    # 9. Biological Multiplier
+                    multiplier = self.calculate_bio_multiplier(u["u_dna"], u["u_dental"], m_dna, m_dental)
+                    final_score = min(1.0, composite_score * multiplier)
+                    
+                    if final_score >= min_score:
+                        report_features = features.copy()
+                        if dist is not None:
+                            report_features.append(f"{int(dist)} miles away")
+                        
+                        results.append({
+                            "uhr_case": u["u_num"],
+                            "mp_file": m_num,
+                            "mp_name": m_name,
+                            "score": round(final_score, 3),
+                            "shared_features": report_features,
+                            "uhr_desc_preview": u["u_desc"][:200],
+                            "mp_desc_preview": m_desc[:200]
+                        })
+        finally:
+            conn.close()
+            
+        return results

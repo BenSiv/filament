@@ -38,8 +38,8 @@ def generate_reports():
     with open(LEADS_PATH, 'r') as f:
         leads = json.load(f)
 
-    # Use service name for container-to-container communication
-    generator = NarrativeGenerator(ollama_host="http://ollama:11434") 
+    # Use localhost as Ollama runs in the same container
+    generator = NarrativeGenerator(ollama_host="http://localhost:11434") 
     # Note: If running from host, use localhost. If running from another container, use ollama.
     # Since I'm executing this via podman-compose/exec, it depends on context.
     # I'll try to detect or just use a robust default.

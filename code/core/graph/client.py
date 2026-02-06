@@ -1,35 +1,57 @@
 """
-Neo4j Graph Database Client.
+SQLite-based Graph Store, replacing Neo4j.
 """
 
+import sqlite3
+import json
 from typing import Any
-
-from neo4j import GraphDatabase
 
 
 class GraphClient:
     """
-    Client for Neo4j graph database operations.
+    Client for SQLite-based graph operations.
     
     Usage:
-        client = GraphClient("bolt://localhost:7687", "neo4j", "password")
+        client = GraphClient(db_path)
         client.create_person(person_entity)
     """
     
-    def __init__(self, uri: str, user: str, password: str):
+    def __init__(self, db_path: str):
         """
-        Initialize the Neo4j client.
+        Initialize the SQLite client.
         
         Args:
-            uri: Neo4j bolt URI.
-            user: Database username.
-            password: Database password.
+            db_path: Path to the SQLite database.
         """
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.db_path = db_path
+        self.conn = sqlite3.connect(db_path)
+        self._init_schema()
     
+    def _init_schema(self) -> None:
+        """Initialize nodes and edges tables."""
+        with self.conn:
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS graph_nodes (
+                    id TEXT PRIMARY KEY,
+                    label TEXT,
+                    properties JSON
+                );
+            """)
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS graph_edges (
+                    source TEXT,
+                    target TEXT,
+                    type TEXT,
+                    properties JSON,
+                    PRIMARY KEY (source, target, type),
+                    FOREIGN KEY (source) REFERENCES graph_nodes(id),
+                    FOREIGN KEY (target) REFERENCES graph_nodes(id)
+                );
+            """)
+
     def close(self):
         """Close the database connection."""
-        self.driver.close()
+        self.conn.close()
     
     def __enter__(self):
         return self
@@ -39,40 +61,55 @@ class GraphClient:
     
     def create_person(self, case_id: str, properties: dict[str, Any]) -> None:
         """
-        Create a Person node in the graph.
-        
-        Args:
-            case_id: Unique case identifier.
-            properties: Node properties to set.
+        Create a Person node.
         """
-        with self.driver.session() as session:
-            session.run(
+        with self.conn:
+            self.conn.execute(
                 """
-                MERGE (p:Person {case_id: $case_id})
-                SET p += $props
+                INSERT OR REPLACE INTO graph_nodes (id, label, properties)
+                VALUES (?, 'Person', ?)
                 """,
-                case_id=case_id,
-                props=properties
+                (case_id, json.dumps(properties))
             )
     
     def create_location(self, location_id: str, properties: dict[str, Any]) -> None:
         """
-        Create a Location node in the graph.
-        
-        Args:
-            location_id: Unique location identifier.
-            properties: Node properties including coordinates.
+        Create a Location node.
         """
-        with self.driver.session() as session:
-            session.run(
+        with self.conn:
+            self.conn.execute(
                 """
-                MERGE (l:Location {id: $location_id})
-                SET l += $props
+                INSERT OR REPLACE INTO graph_nodes (id, label, properties)
+                VALUES (?, 'Location', ?)
                 """,
-                location_id=location_id,
-                props=properties
+                (location_id, json.dumps(properties))
+            )
+            
+    def create_node(self, node_id: str, label: str, properties: dict[str, Any]) -> None:
+        """Generic node creation."""
+        with self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO graph_nodes (id, label, properties) VALUES (?, ?, ?)",
+                (node_id, label, json.dumps(properties))
             )
     
+    def link_nodes(
+        self, 
+        source_id: str, 
+        target_id: str, 
+        rel_type: str,
+        properties: dict[str, Any] | None = None
+    ) -> None:
+        """Create a relationship between two nodes."""
+        with self.conn:
+            self.conn.execute(
+                """
+                INSERT OR REPLACE INTO graph_edges (source, target, type, properties)
+                VALUES (?, ?, ?, ?)
+                """,
+                (source_id, target_id, rel_type, json.dumps(properties or {}))
+            )
+
     def link_person_to_location(
         self, 
         case_id: str, 
@@ -80,20 +117,6 @@ class GraphClient:
         relationship: str = "LOCATED_AT"
     ) -> None:
         """
-        Create a relationship between a Person and a Location.
-        
-        Args:
-            case_id: Person's case identifier.
-            location_id: Location identifier.
-            relationship: Type of relationship (LOCATED_AT, LAST_SEEN_AT).
+        Compatibility method for previous Neo4j version.
         """
-        with self.driver.session() as session:
-            session.run(
-                f"""
-                MATCH (p:Person {{case_id: $case_id}})
-                MATCH (l:Location {{id: $location_id}})
-                MERGE (p)-[:{relationship}]->(l)
-                """,
-                case_id=case_id,
-                location_id=location_id
-            )
+        self.link_nodes(case_id, location_id, relationship)
