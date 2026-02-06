@@ -24,19 +24,16 @@ flowchart LR
 
 ```
 filament/
-├── code/
-│   ├── devenv/              # Development environment configs
-│   ├── extraction/          # Structured data extraction logic
-│   ├── graph/               # Knowledge graph schema & ops
-│   ├── scrapers/            # Data ingestion scrapers
-│   ├── scripts/             # Operational scripts / CLI tools
-│   └── search/              # Vector search implementation
+├── code/                # Source code and scripts
+│   ├── core/            # Core logic (extraction, graph, search, scrapers)
+│   ├── devenv/          # Development environment configs
+│   └── scripts/         # Operational scripts / CLI tools
 ├── data/
-│   ├── external/            # Third-party reference data
-│   ├── processed/           # Cleaned and canonicalized data
-│   ├── raw/                 # Immutable raw scrape data
-│   └── reports/             # Generated markdown reports
-├── docs/                    # Project documentation
+│   ├── external/        # Third-party reference data
+│   ├── processed/       # Cleaned and canonicalized data
+│   ├── raw/             # Immutable raw scrape data
+│   └── reports/         # Generated investigative reports
+├── docs/                # Project documentation
 └── ...
 ```
 
@@ -45,7 +42,7 @@ filament/
 ### Prerequisites
 
 - Python 3.10+
-- PostgreSQL with pgvector extension
+- PostgreSQL with pgvector extension (optional, SQLite used by default)
 - Ollama (for local LLM inference)
 
 ### Installation
@@ -60,24 +57,21 @@ python -m venv venv
 source venv/bin/activate  # Linux/macOS
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r code/requirements.txt
 
 # Copy environment template
-cp .env.example .env
+cp code/devenv/.env.example .env
 # Edit .env with your configuration
 ```
 
 ### Running the System
 
 ```bash
-# Start PostgreSQL with pgvector
-# (See docs/tech_stack.md for setup instructions)
+# Initialize the database (builds filament.db)
+python3 code/scripts/build_sqlite_db.py
 
-# Initialize the database
-python -m code.db.init
-
-# Start the extraction pipeline
-python -m code.extraction.pipeline
+# Run the investigative lead discovery
+python3 -m code.core
 ```
 
 ## 📚 Documentation
@@ -89,6 +83,7 @@ python -m code.extraction.pipeline
 | [Analysis Approaches](docs/analysis_approaches.md) | Extraction, graph, and vector search |
 | [Bioinformatics](docs/bioinformatics.md) | Phenotype and isotope analysis |
 | [Tech Stack](docs/tech_stack.md) | Technology choices and setup |
+| [Contributing](docs/contributing.md) | How to help with Filament |
 
 ## 🔒 Privacy & Ethics
 
@@ -105,7 +100,7 @@ See [docs/contributing.md](docs/contributing.md) for guidelines on how to contri
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ---
 
