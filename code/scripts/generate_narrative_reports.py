@@ -64,7 +64,6 @@ def generate_reports():
 
 **Report Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 **Match Score**: {lead['score']}
-**Key Shared Features**: {', '.join(lead['shared_features'])}
 
 ## Investigative Narrative
 {narrative}

@@ -113,8 +113,36 @@ class CompositeMatcher:
     def calculate_phenotypic_score(self, u_race: str, m_race: str) -> float:
         score = 0.0
         if u_race and m_race:
-            score += 0.5 if u_race == m_race else 0.0
-        return min(1.0, score * 2)
+            if u_race == m_race:
+                score += 0.5
+            else:
+                # Explicit mismatch: Subtract from potential score
+                score -= 0.5 
+        return max(-1.0, min(1.0, score * 2))
+
+    def calculate_traits_penalty(self, u: Dict[str, Any], m_age: int, m_desc: str) -> float:
+        """Calculates penalties for explicit contradictions in traits."""
+        penalty = 0.0
+        
+        # 1. Age Range Penalty (Soft)
+        if u["u_age_min"] and m_age:
+            # Already have hard filter +/- 10 years in find_leads
+            # Apply soft penalty for gaps larger than 5 years
+            if m_age < u["u_age_min"] - 5 or (u["u_age_max"] and m_age > u["u_age_max"] + 5):
+                penalty += 0.2
+
+        # 2. Rare Feature Absence (Surgical/Permanent Marks)
+        # If one case has a rare indicator and the other is descriptive but lacks it
+        m_words = self._get_words(m_desc) - self.stop_words
+        u_words = u["u_words"]
+        
+        for word in ("tattoo", "scar", "piercing", "surgical", "fracture"):
+            if word in u_words and word not in m_words and len(m_words) > 50:
+                penalty += 0.1
+            elif word in m_words and word not in u_words and len(u_words) > 50:
+                penalty += 0.1
+                
+        return penalty
 
     def calculate_bio_multiplier(self, u_dna: str, u_dental: str, m_dna: str, m_dental: str) -> float:
         dna_ready = u_dna == 'Complete' and m_dna == 'Complete'
@@ -234,12 +262,17 @@ class CompositeMatcher:
                     # 7. Phenotypic Matching
                     pheno_score = self.calculate_phenotypic_score(u["u_race"], m_race)
                     
-                    # 8. Composite Scoring
-                    composite_score = (text_score * 0.4) + (geo_score * 0.3) + (pheno_score * 0.3)
+                    # 8. Traits Penalty (Negative Scoring)
+                    traits_penalty = self.calculate_traits_penalty(u, m_age, m_desc)
                     
-                    # 9. Biological Multiplier
+                    # 9. Composite Scoring (Incorporating penalties)
+                    # Weights: Text(40%), Geo(30%), Pheno(30%) minus Traits Penalty
+                    composite_score = (text_score * 0.4) + (geo_score * 0.3) + (pheno_score * 0.3)
+                    composite_score -= traits_penalty
+                    
+                    # 10. Biological Multiplier
                     multiplier = self.calculate_bio_multiplier(u["u_dna"], u["u_dental"], m_dna, m_dental)
-                    final_score = min(1.0, composite_score * multiplier)
+                    final_score = min(1.0, max(0.0, composite_score * multiplier))
                     
                     if final_score >= min_score:
                         report_features = features.copy()
