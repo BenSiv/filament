@@ -31,7 +31,11 @@ class CompositeMatcher:
             'estimated', 'approximately', 'approx', 'about', 'inches', 'pounds', 'cm', 'kg', 'lbs',
             'body', 'description', 'subject', 'case', 'number', 'discovery', 'location', 'found',
             'sighting', 'last', 'seen', 'contact', 'date', 'remains', 'charred', 'skeletonized',
-            'burned', 'discovered', 'debris', 'underneath', 'after', 'before', 'around'
+            'burned', 'discovered', 'debris', 'underneath', 'after', 'before', 'around', 'above',
+            'below', 'where', 'which', 'there', 'their', 'them', 'they', 'this', 'that', 'from',
+            'into', 'been', 'were', 'also', 'some', 'many', 'very', 'small', 'large', 'water',
+            'side', 'both', 'between', 'area', 'name', 'time', 'well', 'worn', 'long', 'size',
+            'brand', 'color', 'black', 'white', 'blue', 'red', 'green', 'yellow', 'brown', 'gray'
         }
         self.idf_cache = {}
         self.uhr_total = 0
@@ -41,7 +45,10 @@ class CompositeMatcher:
 
     def _get_words(self, text: str) -> Set[str]:
         if not text: return set()
-        return set(WORD_PATTERN.findall(text.lower()))
+        words = set(WORD_PATTERN.findall(text.lower()))
+        # Filter: Min 3 chars, and avoid pure numeric IDs unless very specific
+        filtered = {w for w in words if len(w) > 2 and not w.isdigit()}
+        return filtered
 
     def load_stats(self, conn: sqlite3.Connection):
         """Pre-calculate global statistics for TF-IDF."""
@@ -53,7 +60,7 @@ class CompositeMatcher:
         for i, row in enumerate(cursor.fetchall()):
             if row[0]:
                 self.uhr_total += 1
-                words = self._get_words(row[0])
+                words = self._get_words(row[0]) - self.stop_words
                 for word in words:
                     self.uhr_df[word] += 1
             if i % 5000 == 0 and i > 0: print(f"  Summarized {i} UHR cases")
@@ -72,7 +79,7 @@ class CompositeMatcher:
     def calculate_specificity(self, word: str, df: Counter, total_docs: int) -> float:
         if word in self.stop_words: return 0.0
         count = df.get(word, 0)
-        if count <= 0: return 2.0
+        if count <= 0: return 2.5 # Extremely rare
         return math.log10(total_docs / count)
 
     def score_text_overlap(
@@ -94,9 +101,11 @@ class CompositeMatcher:
             
             specificity = self.idf_cache[word]
             total_score += specificity
-            if specificity > 1.8:
+            
+            # Hardened thresholds. Rare: >2.2, Normal: >1.5
+            if specificity > 2.2:
                 matched_features.append(f"{word} (Rare)")
-            elif specificity > 1.2:
+            elif specificity > 1.5:
                 matched_features.append(word)
         
         return min(1.0, total_score / 35), matched_features
