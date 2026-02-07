@@ -5,10 +5,10 @@ from typing import Dict, Any, List
 
 class NarrativeGenerator:
     """
-    Generates investigative narratives and story lines using Llama 3.2 via Ollama.
+    Generates investigative narratives and story lines using DeepSeek-R1 via Ollama.
     """
     
-    def __init__(self, ollama_host: str = "http://localhost:11434", model: str = "llama3.2"):
+    def __init__(self, ollama_host: str = "http://localhost:11434", model: str = "deepseek-r1:1.5b"):
         self.ollama_host = ollama_host
         self.model = model
         
