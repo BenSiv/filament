@@ -82,6 +82,6 @@ Analyze the potential match between Missing Person {mp_data.get('name')} ({mp_da
 4. **Geography**: Analyze the path from last seen location to finding location. Use the specific villages/reservations/landmark names provided in Circumstances.
 5. **Hypothesis**: How did they likely end up at the discovery site?
 
-Keep it concise, professional, and strictly fact-driven. Ensure you highlight both the case for and the case against the match.
+**CRITICAL: DO NOT suggest "Next Steps", "Recommendations", or further investigation.** Keep it concise, professional, and strictly fact-driven. Ensure you highlight both the case for and the case against the match.
 """
         return prompt
