@@ -26,14 +26,14 @@ def load_image_from_url(url):
     return None
 
 def main():
-    print(f"Loading sketch from {SKETCH_PATH}...")
+    print(f"Loading sketch from {SKETCH_PATH}")
     try:
         sketch_image = face_recognition.load_image_file(SKETCH_PATH)
         # Upsample 2x to help with sketch/small resolution
         sketch_encodings = face_recognition.face_encodings(sketch_image, num_jitters=5, model='large')
         
         if not sketch_encodings:
-             print("CRITICAL: No face detected in the sketch. Attempting with lower threshold/upsampling...")
+             print("CRITICAL: No face detected in the sketch. Attempting with lower threshold/upsampling")
              # Try detecting locations first with CNN if available or HOG
              # Just fail gracefully for now if basic encoding fails.
              print("Experiment Aborted: Could not find face in sketch.")
@@ -50,7 +50,7 @@ def main():
     with open(CHARLEY_FILE, 'r') as f:
         candidates = json.load(f)
         
-    print(f"Scanning {len(candidates)} candidates for facial similarity...")
+    print(f"Scanning {len(candidates)} candidates for facial similarity")
     
     matches = []
     
@@ -61,7 +61,7 @@ def main():
         if not images:
             continue
             
-        print(f"[{i+1}/{len(candidates)}] Checking {name}...")
+        print(f"[{i+1}/{len(candidates)}] Checking {name}")
         
         best_distance = 1.0 # High value = no match
         

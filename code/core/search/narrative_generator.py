@@ -31,13 +31,23 @@ class NarrativeGenerator:
                         "stream": False,
                         "options": {
                             "temperature": 0.7,
-                            "num_predict": 500
+                            "num_predict": 2500,
+                            "num_ctx": 4096
                         }
                     },
                     timeout=600
                 )
-                response.raise_for_status()
-                return response.json().get("response", "Could not generate narrative.")
+                resp_json = response.json()
+                narrative = resp_json.get("response", "")
+                
+                if not narrative or narrative.strip() == "":
+                    # Fallback to thinking field if response is empty (common with DeepSeek-R1)
+                    narrative = resp_json.get("thinking", "")
+                    
+                if not narrative:
+                    return "Could not generate narrative (DeepSeek-R1 returned empty response)."
+                
+                return narrative
                 
             except requests.exceptions.HTTPError as e:
                 # If model is not found (404), it might be loading. Retry.

@@ -3,7 +3,7 @@ import cv2
 import sys
 
 def test_detection(image_path):
-    print(f"Testing detection on {image_path}...")
+    print(f"Testing detection on {image_path}")
     try:
         # Load
         image = face_recognition.load_image_file(image_path)

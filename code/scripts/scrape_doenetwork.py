@@ -43,7 +43,7 @@ def get_case_ids_from_index(driver, index_url):
     """Extract case IDs from index page using Selenium."""
     case_ids = []
     try:
-        print(f"Navigating to {index_url}...")
+        print(f"Navigating to {index_url}")
         driver.get(index_url)
         time.sleep(3) # Wait for JS/Render
         
@@ -66,7 +66,7 @@ def get_all_case_ids(driver):
     """Collect all case IDs from all index pages."""
     all_cases = {}
     for category, url in INDEX_PAGES.items():
-        print(f"Fetching {category} index...")
+        print(f"Fetching {category} index")
         ids = get_case_ids_from_index(driver, url)
         for case_id in ids:
             all_cases[case_id] = {"category": category}
@@ -202,12 +202,12 @@ def main():
     parser.add_argument("--categories", nargs="+", choices=list(INDEX_PAGES.keys()))
     args = parser.parse_args()
     
-    print("Starting Selenium Scraper...")
+    print("Starting Selenium Scraper")
     driver = init_driver()
     
     try:
         if args.test:
-            print("Running Test Mode...")
+            print("Running Test Mode")
             ids = get_case_ids_from_index(driver, INDEX_PAGES["us_males"])
             print(f"Found {len(ids)} IDs.")
             if ids:

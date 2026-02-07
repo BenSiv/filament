@@ -11,7 +11,7 @@ from load_namus_to_db import get_text_description, get_db_connection
 MODEL_NAME = 'all-MiniLM-L6-v2'
 
 def main():
-    print("Loading specific cases...")
+    print("Loading specific cases")
     conn = get_db_connection()
     model = SentenceTransformer(MODEL_NAME)
     cursor = conn.cursor()
@@ -22,7 +22,7 @@ def main():
         
     target_uhr = next((c for c in uhr_data if str(c.get('id', '')) == '77011' or c.get('idFormatted') == 'UP77011'), None)
     if target_uhr:
-        print(f"Found UHR 77011. Inserting...")
+        print(f"Found UHR 77011. Inserting")
         desc = get_text_description(target_uhr, 'uhr')
         emb = model.encode(desc).tolist()
         
@@ -48,7 +48,7 @@ def main():
         
     target_mp = next((c for c in mp_data if str(c.get('id', '')) == '28312' or c.get('idFormatted') == 'MP28312'), None)
     if target_mp:
-        print(f"Found MP 28312. Inserting...")
+        print(f"Found MP 28312. Inserting")
         desc = get_text_description(target_mp, 'mp')
         emb = model.encode(desc).tolist()
         name = f"{target_mp.get('subjectIdentification', {}).get('firstName')} {target_mp.get('subjectIdentification', {}).get('lastName')}"

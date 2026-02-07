@@ -217,7 +217,7 @@ print("-" * 40)
 tattoo_cases = [c for c in cases if c.get('Tattoos', '').strip()]
 print(f"   Cases with tattoos: {len(tattoo_cases)}")
 for c in tattoo_cases[:3]:
-    print(f"     - {c['Case_Numbe']}: {c['Tattoos'][:60]}...")
+    print(f"     - {c['Case_Numbe']}: {c['Tattoos'][:60]}")
 
 # Cases with scars
 scar_cases = [c for c in cases if c.get('Scars', '').strip()]

@@ -7,7 +7,7 @@ UHR_FILE = "data/raw/namus_unidentified.json"
 MP_FILE = "data/raw/namus_missing.json"
 
 def load_data():
-    print("Loading data...")
+    print("Loading data")
     leads = json.load(open(LEADS_FILE))
     
     uhr_map = {}
@@ -48,7 +48,7 @@ def main():
     
     rich_leads = []
     
-    print(f"Scanning {len(leads)} leads for RICH matches...")
+    print(f"Scanning {len(leads)} leads for RICH matches")
     
     for lead in leads:
         uhr_id = lead['uhr_id']

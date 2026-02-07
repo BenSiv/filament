@@ -13,7 +13,7 @@ def main():
     parser.add_argument("--pattern", default="PA", help="Substring to match in Case ID (e.g. UMPA)")
     args = parser.parse_args()
     
-    print(f"Loading IDs from {IDS_FILE}...")
+    print(f"Loading IDs from {IDS_FILE}")
     with open(IDS_FILE, 'r') as f:
         all_ids = json.load(f)
         
@@ -24,7 +24,7 @@ def main():
         print("No targets found.")
         return
 
-    print("Starting Scraper...")
+    print("Starting Scraper")
     driver = init_driver()
     try:
         jsonl_file = TARGET_FILE.replace('.json', '.jsonl')

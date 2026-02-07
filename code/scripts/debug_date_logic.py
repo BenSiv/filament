@@ -25,7 +25,7 @@ def main():
     uhr_id = 'UP4335'
     mp_id = 'MP17595'
     
-    print(f"Loading {uhr_id} and {mp_id}...")
+    print(f"Loading {uhr_id} and {mp_id}")
     uhr = find_case(UHR_FILE, uhr_id.replace('UP',''))
     mp = find_case(MP_FILE, mp_id.replace('MP',''))
     

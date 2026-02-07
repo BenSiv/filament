@@ -67,11 +67,11 @@ def get_text_description(obj, c_type='uhr'):
     return "\n".join(parts)
 
 def load_uhr(conn, model):
-    print(f"Loading UHR from {UHR_FILE}...")
+    print(f"Loading UHR from {UHR_FILE}")
     with open(UHR_FILE) as f:
         data = json.load(f)
         
-    print(f"Found {len(data)} UHR cases. Processing...")
+    print(f"Found {len(data)} UHR cases. Processing")
     
     cursor = conn.cursor()
     batch = []
@@ -141,11 +141,11 @@ def process_batch_uhr(cursor, batch, model):
     execute_values(cursor, sql, rows)
 
 def load_mp(conn, model):
-    print(f"Loading MP from {MP_FILE}...")
+    print(f"Loading MP from {MP_FILE}")
     with open(MP_FILE) as f:
         data = json.load(f)
         
-    print(f"Found {len(data)} MP cases. Processing...")
+    print(f"Found {len(data)} MP cases. Processing")
     
     cursor = conn.cursor()
     batch = []
@@ -216,10 +216,10 @@ def process_batch_mp(cursor, batch, model):
     execute_values(cursor, sql, rows)
 
 def main():
-    print("Initializing Database Loader with RAG Embeddings...")
+    print("Initializing Database Loader with RAG Embeddings")
     conn = get_db_connection()
     
-    print(f"Loading model {MODEL_NAME}...")
+    print(f"Loading model {MODEL_NAME}")
     model = SentenceTransformer(MODEL_NAME)
     
     load_uhr(conn, model)

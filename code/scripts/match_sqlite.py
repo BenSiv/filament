@@ -23,10 +23,10 @@ def main():
         print(f"Error: Database not found at {DB_PATH}")
         return
 
-    print("Initializing Specificity Matcher...")
+    print("Initializing Specificity Matcher")
     matcher = SpecificityMatcher(DB_PATH)
     
-    print("Analyzing UHR cases for leads...")
+    print("Analyzing UHR cases for leads")
     leads = matcher.find_leads(limit=200)
     
     print(f"Found {len(leads)} potential leads.")

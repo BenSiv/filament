@@ -121,15 +121,15 @@ def analyze_candidate_overlaps(conn):
     
     print("Sample UHR Females with Tattoos:")
     for l in uhr_leads:
-        print(f"  {l[0]}: {l[1]}, Age {l[2]}-{l[3]}, Desc: {l[4][:100]}...")
+        print(f"  {l[0]}: {l[1]}, Age {l[2]}-{l[3]}, Desc: {l[4][:100]}")
         
     print("\nSample MP Females with Tattoos:")
     for l in mp_leads:
-        print(f"  {l[0]}: {l[1]}, Age {l[3]}, Desc: {l[4][:100]}...")
+        print(f"  {l[0]}: {l[1]}, Age {l[3]}, Desc: {l[4][:100]}")
     print()
 
 def generate_markdown_report(conn):
-    print(f"Generating Markdown report at {REPORT_PATH}...")
+    print(f"Generating Markdown report at {REPORT_PATH}")
     
     # Load advanced leads if available
     advanced_leads = []
@@ -191,7 +191,7 @@ def generate_markdown_report(conn):
         """
         cursor.execute(uhr_query)
         for row in cursor.fetchall():
-            desc = row[4][:100].replace('\n', ' ') + "..."
+            desc = row[4][:100].replace('\n', ' ') + ""
             f.write(f"| {row[0]} | {row[1]} | {row[2]}-{row[3]} | {desc} |\n")
         
         f.write("\n### Sample MP Females with Tattoos\n\n")
@@ -206,7 +206,7 @@ def generate_markdown_report(conn):
         """
         cursor.execute(mp_query)
         for row in cursor.fetchall():
-            desc = row[3][:100].replace('\n', ' ') + "..."
+            desc = row[3][:100].replace('\n', ' ') + ""
             f.write(f"| {row[0]} | {row[1]} | {row[2]} | {desc} |\n")
             
         f.write("\n## Keyword Analysis\n")

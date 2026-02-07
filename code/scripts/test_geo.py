@@ -8,7 +8,7 @@ nomi = pgeocode.Nominatim('ca')
 # It has a dataframe access.
 
 try:
-    print("Searching for Vancouver...")
+    print("Searching for Vancouver")
     res = nomi.query_postal_code("V6B") # Vancouver postal code prefix
     print(f"V6B: {res.latitude}, {res.longitude}, {res.place_name}")
     

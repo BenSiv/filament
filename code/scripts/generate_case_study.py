@@ -42,7 +42,7 @@ def load_doe_network_narrative(namus_id):
     return None
 
 def find_case(file_path, id_val):
-    print(f"Searching {file_path} for {id_val}...")
+    print(f"Searching {file_path} for {id_val}")
     try:
         with open(file_path) as f:
             cases = json.load(f)
@@ -114,7 +114,7 @@ def generate_markdown(uhr, mp):
 > **Case ID:** [{doe_case.get('case_id')}]({doe_case.get('url')})
 > 
 > **Detailed Circumstances:**
-> {doe_case.get('circumstances_of_discovery') or doe_case.get('raw_text')[:500] + "..."}
+> {doe_case.get('circumstances_of_discovery') or doe_case.get('raw_text')[:500] + ""}
 """
 
     return f"""# Case Study: Match {uhr_id} ↔ {mp_name} ({mp_id})

@@ -9,7 +9,7 @@ options.add_argument("--disable-dev-shm-usage")
 driver = webdriver.Chrome(options=options)
 
 url = "https://www.services.rcmp-grc.gc.ca/missing-disparus/case-dossier.jsf?case=2014006179&lang=en"
-print(f"Fetching {url}...")
+print(f"Fetching {url}")
 driver.get(url)
 
 with open("data/raw/debug_case.html", "w") as f:

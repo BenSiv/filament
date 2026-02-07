@@ -22,18 +22,18 @@ def main():
         print("Please run 'python3 code/scripts/build_sqlite_db.py' first.")
         return
 
-    print("Initializing Composite Matcher...")
+    print("Initializing Composite Matcher")
     matcher = CompositeMatcher(db_path)
     
     output_path = "data/processed/leads_advanced.json"
     leads = []
     
     if os.path.exists(output_path):
-        print(f"Loading existing leads from {output_path}...")
+        print(f"Loading existing leads from {output_path}")
         with open(output_path, "r") as f:
             leads = json.load(f)
     else:
-        print("Discovering advanced leads...")
+        print("Discovering advanced leads")
         leads = matcher.find_leads(limit=20)
         
         # Save results for reporting

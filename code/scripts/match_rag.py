@@ -39,7 +39,7 @@ def find_matches(uhr_id, limit=20):
     uhr_sex = uhr_raw.get('subjectDescription', {}).get('sex', {}).get('name')
     
     print(f"Found UHR: {uhr_id} (Sex: {uhr_sex})")
-    print(f"Description: {uhr_desc[:100]}...")
+    print(f"Description: {uhr_desc[:100]}")
     
     # Build Query
     # We want MPs where:
@@ -94,7 +94,7 @@ def find_matches(uhr_id, limit=20):
         # Extraction from Description for display
         print(f"{mp_name} ({mp_id}) - Score: {1-dist:.3f}")
         print(f"  Missing: {mp_date} | Sex: {mp_sex} | Ht: {mp_height}in")
-        print(f"  Desc: {mp_desc[:150]}...")
+        print(f"  Desc: {mp_desc[:150]}")
         print("-" * 40)
         
     conn.close()

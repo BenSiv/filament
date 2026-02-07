@@ -32,7 +32,7 @@ def get_db():
     )
 
 def load_mps(conn):
-    print("Loading MPs...")
+    print("Loading MPs")
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute("SELECT file_number, last_seen_date, age_at_disappearance, sex, description, embedding FROM missing_persons WHERE embedding IS NOT NULL")
         return cur.fetchall()
@@ -163,7 +163,7 @@ def extract_features(uhr, mp):
     return [feats[col] for col in FEATURES]
 
 def main():
-    print("Starting Synthetic Training Pipeline...")
+    print("Starting Synthetic Training Pipeline")
     
     conn = get_db()
     mps = load_mps(conn)
@@ -181,7 +181,7 @@ def main():
     target_count = min(len(mps), 5000)
     indices = range(len(mps))
     
-    print(f"Generating {target_count} positive pairs...")
+    print(f"Generating {target_count} positive pairs")
     
     # We need embedding model just for text checks if needed, 
     # but we are doing vector noise simulation.
@@ -218,9 +218,9 @@ def main():
         y.append(0)
         
         if i % 500 == 0:
-            print(f"Generated {i*2} samples...")
+            print(f"Generated {i*2} samples")
             
-    print("Training Model...")
+    print("Training Model")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     
     clf = RandomForestClassifier(n_estimators=100, max_depth=10)

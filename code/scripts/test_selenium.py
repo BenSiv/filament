@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 import time
 
 def main():
-    print("Initializing Chrome Options...")
+    print("Initializing Chrome Options")
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
@@ -13,13 +13,13 @@ def main():
     # Impersonate a real browser
     options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-    print("Starting WebDriver...")
+    print("Starting WebDriver")
     try:
         driver = webdriver.Chrome(options=options)
         print("Driver started.")
         
         url = "https://www.doenetwork.org/cases/software/uid-geo-us-males.html"
-        print(f"Navigating to {url}...")
+        print(f"Navigating to {url}")
         driver.get(url)
         
         time.sleep(3) # Wait for potential redirects/checks

@@ -28,7 +28,7 @@ def main():
     
     # Fetch image
     url = "https://mermaid.ink/img/" + base64_string
-    print(f"Fetching from {url}...")
+    print(f"Fetching from {url}")
     
     try:
         response = requests.get(url)

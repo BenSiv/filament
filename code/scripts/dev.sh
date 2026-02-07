@@ -27,16 +27,16 @@ check_deps() {
 
 # Start all services
 up() {
-    info "Starting FILAMENT development environment..."
+    info "Starting FILAMENT development environment"
     podman-compose -f "$COMPOSE_FILE" up -d
-    info "Waiting for services to be healthy..."
+    info "Waiting for services to be healthy"
     sleep 5
     status
 }
 
 # Stop all services
 down() {
-    info "Stopping FILAMENT development environment..."
+    info "Stopping FILAMENT development environment"
     podman-compose -f "$COMPOSE_FILE" down
 }
 
@@ -53,7 +53,7 @@ logs() {
 
 # Enter app container shell
 shell() {
-    info "Entering filament-app container..."
+    info "Entering filament-app container"
     podman exec -it filament-app /bin/bash
 }
 
@@ -64,7 +64,7 @@ run() {
 
 # Pull Ollama models
 pull_models() {
-    info "Pulling Deepseek-R1 model..."
+    info "Pulling Deepseek-R1 model"
     podman exec filament-app ollama pull deepseek-r1:1.5b
     info "Model pulled successfully!"
 }
@@ -82,14 +82,14 @@ clean() {
 
 # Rebuild containers
 rebuild() {
-    info "Rebuilding container..."
+    info "Rebuilding container"
     podman-compose -f "$COMPOSE_FILE" build --no-cache
     info "Rebuild complete"
 }
 
 # Run the full pipeline (setup + analysis)
 pipeline() {
-    info "Starting full pipeline..."
+    info "Starting full pipeline"
     up
     
     info "Step 1: Building Database"

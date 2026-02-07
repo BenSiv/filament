@@ -6,7 +6,7 @@ base_url = "https://www.services.rcmp-grc.gc.ca/missing-disparus/results-resulta
 
 # Test 1: ?first=60 (0-based index for page 2)
 url_first = f"{base_url}?first=60"
-print(f"Testing {url_first}...")
+print(f"Testing {url_first}")
 resp = requests.get(url_first)
 soup = BeautifulSoup(resp.content, 'html.parser')
 links_first = soup.find_all('a', href=lambda h: h and 'case-dossier.jsf' in h)
@@ -17,7 +17,7 @@ if links_first:
 
 # Test 2: ?page=2
 url_page = f"{base_url}?page=2"
-print(f"\nTesting {url_page}...")
+print(f"\nTesting {url_page}")
 resp = requests.get(url_page)
 soup = BeautifulSoup(resp.content, 'html.parser')
 links_page = soup.find_all('a', href=lambda h: h and 'case-dossier.jsf' in h)

@@ -5,7 +5,7 @@ INPUT_FILE = "data/raw/namus_missing.json"
 OUTPUT_FILE = "data/raw/namus_missing_flat.json"
 
 def main():
-    print(f"Loading {INPUT_FILE}...")
+    print(f"Loading {INPUT_FILE}")
     if not os.path.exists(INPUT_FILE):
         print("Input file not found!")
         return
@@ -20,7 +20,7 @@ def main():
         return
 
     flattened = []
-    print(f"Processing {len(data)} records...")
+    print(f"Processing {len(data)} records")
     
     for case in data:
         # Extract features
@@ -57,7 +57,7 @@ def main():
         }
         flattened.append(flat)
 
-    print(f"Saving flattened data to {OUTPUT_FILE}...")
+    print(f"Saving flattened data to {OUTPUT_FILE}")
     with open(OUTPUT_FILE, 'w') as f:
         json.dump(flattened, f)
     

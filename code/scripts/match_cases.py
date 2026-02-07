@@ -313,9 +313,9 @@ def get_height_range(case, is_uhr=True):
 def build_mp_index(mp_cases, geo_filter=True):
     """Build index for fast lookup."""
     if geo_filter:
-        print("Building MP index (sex × state)...")
+        print("Building MP index (sex × state)")
     else:
-        print("Building MP index (sex only, geo filter disabled)...")
+        print("Building MP index (sex only, geo filter disabled)")
     
     # Index structure: sex -> state -> list of MPs (or sex -> None -> all)
     index = defaultdict(lambda: defaultdict(list))

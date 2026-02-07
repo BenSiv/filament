@@ -69,7 +69,7 @@ class PodscribeClient:
                      episode_urls.append(url)
                      seen.add(url)
             
-            logger.info(f"Found {len(episode_urls)} episodes. Processing top {limit}...")
+            logger.info(f"Found {len(episode_urls)} episodes. Processing top {limit}")
             
             for url in episode_urls[:limit]:
                 try:

@@ -12,11 +12,11 @@ def get_case_urls():
     """Fetches case URLs from the Washington index page."""
     # Check if we have a local debug file first to save bandwidth
     if os.path.exists('data/raw/debug_charley_wa.html'):
-        print("Using local index file...")
+        print("Using local index file")
         with open('data/raw/debug_charley_wa.html', 'r') as f:
             soup = BeautifulSoup(f, 'html.parser')
     else:
-        print("Fetching index from web...")
+        print("Fetching index from web")
         resp = requests.get(INDEX_URL)
         if resp.status_code != 200:
             print(f"Failed to fetch index: {resp.status_code}")
@@ -99,7 +99,7 @@ def main():
     cases = []
     # Process
     for i, url in enumerate(urls):
-        print(f"[{i+1}/{len(urls)}] Scraping {url}...")
+        print(f"[{i+1}/{len(urls)}] Scraping {url}")
         try:
             resp = requests.get(url)
             if resp.status_code == 200:

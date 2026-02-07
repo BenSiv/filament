@@ -29,14 +29,14 @@ def get_case_ids(driver):
     driver.get(START_URL)
     
     # Wait for any case link to appear
-    print("Waiting for results to load...")
+    print("Waiting for results to load")
     WebDriverWait(driver, 15).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "a[href*='case-dossier']"))
     )
     
     page_num = 1
     while True:
-        print(f"Scraping page {page_num}...")
+        print(f"Scraping page {page_num}")
         
         # Extract links from current page
         soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -130,9 +130,9 @@ def scrape_case_details(case_id):
         return None
 
 def main():
-    print("Starting scraper...")
+    print("Starting scraper")
     driver = setup_driver()
-    print("Collecting Case IDs...")
+    print("Collecting Case IDs")
     case_ids = get_case_ids(driver)
     # Driver kept open for details?
     # To speed up, let's try transferring cookies to requests
@@ -146,7 +146,7 @@ def main():
     for cookie in cookies:
         session.cookies.set(cookie['name'], cookie['value'])
     
-    print(f"Collected {len(case_ids)} unique Case IDs. Switching to Requests with session...")
+    print(f"Collected {len(case_ids)} unique Case IDs. Switching to Requests with session")
     
     jsonl_file = OUTPUT_FILE + "l"
     

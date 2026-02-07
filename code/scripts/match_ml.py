@@ -32,7 +32,7 @@ def parse_emb(e):
     return np.array(json.loads(e) if isinstance(e, str) else e)
 
 def main():
-    print("Starting Optimized ML Matching Inference (In-Memory)...")
+    print("Starting Optimized ML Matching Inference (In-Memory)")
     
     # Load Model
     if not os.path.exists(MODEL_PATH):
@@ -47,7 +47,7 @@ def main():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # 1. Load All MPs
-    print("Loading all Missing Persons...")
+    print("Loading all Missing Persons")
     cursor.execute("""
         SELECT file_number, name, last_seen_date, sex, age_at_disappearance, description, embedding
         FROM missing_persons
@@ -76,12 +76,12 @@ def main():
     print(f"Loaded {len(mp_data)} MPs. Matrix shape: {mp_matrix.shape}")
     
     # 2. Build KNN Index
-    print("Building NearestNeighbors Index...")
+    print("Building NearestNeighbors Index")
     nbrs = NearestNeighbors(n_neighbors=50, metric='cosine', algorithm='brute')
     nbrs.fit(mp_matrix)
     
     # 3. Load All UHRs
-    print("Loading UHR cases...")
+    print("Loading UHR cases")
     cursor.execute("""
         SELECT case_number, discovery_date, estimated_sex, 
                estimated_age_min, estimated_age_max, description, embedding
@@ -118,7 +118,7 @@ def main():
         return
         
     uhr_matrix = np.array(uhr_vectors)
-    print(f"Querying KNN for {uhr_matrix.shape[0]} cases...")
+    print(f"Querying KNN for {uhr_matrix.shape[0]} cases")
     
     # Calculate Distances (batch)
     # n_neighbors=50
@@ -126,7 +126,7 @@ def main():
     # Higher sim = Lower distance.
     distances, indices = nbrs.kneighbors(uhr_matrix)
     
-    print("Scoring candidates...")
+    print("Scoring candidates")
     
     # Process only a subset for demo speed
     uhr_data = uhr_data[:100]

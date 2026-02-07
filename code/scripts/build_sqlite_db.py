@@ -16,7 +16,7 @@ def init_db(conn):
     # Enable JSON support (built-in for modern SQLite)
     
     # Drop existing tables to ensure clean schema with new columns
-    print("Dropping existing tables for clean rebuild...")
+    print("Dropping existing tables for clean rebuild")
     cursor.execute("DROP TABLE IF EXISTS unidentified_cases;")
     cursor.execute("DROP TABLE IF EXISTS missing_persons;")
     
@@ -125,7 +125,7 @@ def load_uhr(conn):
         print(f"Warning: {UHR_FILE} not found.")
         return
 
-    print(f"Loading Unidentified Cases from {UHR_FILE}...")
+    print(f"Loading Unidentified Cases from {UHR_FILE}")
     with open(UHR_FILE) as f:
         data = json.load(f)
         
@@ -192,7 +192,7 @@ def load_mp(conn):
         print(f"Warning: {MP_FILE} not found.")
         return
 
-    print(f"Loading Missing Persons from {MP_FILE}...")
+    print(f"Loading Missing Persons from {MP_FILE}")
     with open(MP_FILE) as f:
         data = json.load(f)
         

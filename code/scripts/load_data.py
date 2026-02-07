@@ -93,7 +93,7 @@ def load_uhr_data(conn, json_path: str):
         data = json.load(f)
     
     cases = [feat['attributes'] for feat in data['features']]
-    print(f"Loading {len(cases)} cases...")
+    print(f"Loading {len(cases)} cases")
     
     # Prepare data for insertion
     rows = []
@@ -233,7 +233,7 @@ def main():
             """)
             for row in cur.fetchall():
                 print(f"  {row[0]}: {row[1]}, {row[2]}-{row[3]}yo")
-                print(f"    {row[4]}...")
+                print(f"    {row[4]}")
         
         conn.close()
         print()

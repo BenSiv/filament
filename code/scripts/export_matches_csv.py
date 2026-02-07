@@ -14,7 +14,7 @@ def flatten_dict(d, prefix=''):
     return dict(items)
 
 def main():
-    print("Loading data...")
+    print("Loading data")
     
     # Load Matches
     try:
@@ -35,7 +35,7 @@ def main():
 
     rows = []
     
-    print(f"Processing {len(matches_data)} travelers with matches...")
+    print(f"Processing {len(matches_data)} travelers with matches")
     
     for item in matches_data:
         t_id = item['traveler_id']
@@ -69,7 +69,7 @@ def main():
         print("No matches to export.")
         return
 
-    print(f"Generating CSV with {len(rows)} rows...")
+    print(f"Generating CSV with {len(rows)} rows")
     df = pd.DataFrame(rows)
     
     # Sort by Match Score Descending

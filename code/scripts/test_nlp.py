@@ -5,7 +5,7 @@ sys.path.append('scripts')
 from match_travelers import extract_features_nlp, extract_date
 
 def test():
-    print("Testing NLP extraction...")
+    print("Testing NLP extraction")
     text = "He has a large dragon tattoo on his back and was last seen wearing a blue hoodie and black jeans."
     features = extract_features_nlp(text)
     print(f"Features: {features}")
@@ -15,7 +15,7 @@ def test():
     assert 'hoodie' in str(features['clothing'])
     print("NLP Passed.")
 
-    print("Testing Date Extraction...")
+    print("Testing Date Extraction")
     date_text = "Terry FIELD left Lost Nation structure on August 26th, 1986."
     dt = extract_date(date_text)
     print(f"Extracted Date: {dt}")

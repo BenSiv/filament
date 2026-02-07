@@ -5,7 +5,7 @@ import json
 URL = "https://charleyproject.org/case/john-andrew-aarlie"
 
 def test_scrape():
-    print(f"Fetching {URL}...")
+    print(f"Fetching {URL}")
     resp = requests.get(URL)
     soup = BeautifulSoup(resp.content, 'html.parser')
     

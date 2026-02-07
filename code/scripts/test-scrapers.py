@@ -201,7 +201,7 @@ def test_postgres():
             cur.execute("SELECT version();")
             version = cur.fetchone()[0]
             print(f"✅ PostgreSQL connected")
-            print(f"   {version[:50]}...")
+            print(f"   {version[:50]}")
             
             # Test pgvector
             cur.execute("SELECT * FROM pg_extension WHERE extname = 'vector';")

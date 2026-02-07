@@ -21,10 +21,10 @@ def verify_scraper():
     # The Vanished Podcast Series ID
     SERIES_ID = "870"
     
-    print(f"Initializing scraper for Series {SERIES_ID}...")
+    print(f"Initializing scraper for Series {SERIES_ID}")
     client = PodscribeClient()
     
-    print("Fetching last 3 transcripts...")
+    print("Fetching last 3 transcripts")
     try:
         transcripts = client.fetch_series_transcripts(series_id=SERIES_ID, limit=3)
         
@@ -34,7 +34,7 @@ def verify_scraper():
             print(f"\n[{count}] Found Transcript!")
             print(f"Title: {t.title}")
             print(f"Source URL: {t.source_url}")
-            print(f"Text Snippet: {t.text[:200]}...")
+            print(f"Text Snippet: {t.text[:200]}")
             
             if len(t.text) < 100:
                 print("WARNING: Text seems too short!")

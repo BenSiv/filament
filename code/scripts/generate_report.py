@@ -9,7 +9,7 @@ BC_DATA = "data/raw/bc_uhr_cases.json"
 OUTPUT_REPORT = "data/processed/leads_report.md"
 
 def load_data():
-    print("Loading data...")
+    print("Loading data")
     try:
         leads = json.load(open(LEADS_FILE))
         mps = json.load(open(MP_DATA))
@@ -49,7 +49,7 @@ def generate_report():
         print("No leads found.")
         return
 
-    print(f"Processing {len(leads)} leads...")
+    print(f"Processing {len(leads)} leads")
     
     # Enrich leads with names
     enriched = []

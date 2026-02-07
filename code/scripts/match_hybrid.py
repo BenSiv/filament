@@ -65,12 +65,12 @@ def calculate_hybrid_score(uhr_full, mp_full, vector_score, uhr_date_found):
     return final_score, reasons
 
 def main():
-    print("Starting Hybrid RAG Matcher (Consolidated)...")
+    print("Starting Hybrid RAG Matcher (Consolidated)")
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # 1. Get UHR cases (embedding for search, raw_data for scoring)
-    print("Fetching UHR cases...")
+    print("Fetching UHR cases")
     cursor.execute("""
         SELECT case_number, discovery_date, estimated_sex, raw_data, embedding
         FROM unidentified_cases
@@ -81,12 +81,12 @@ def main():
     
     matches = []
     
-    print("Matching...")
+    print("Matching")
     count = 0
     
     for uhr in uhr_cases:
         if count % 100 == 0:
-            print(f"Processed {count}/{len(uhr_cases)}...")
+            print(f"Processed {count}/{len(uhr_cases)}")
         count += 1
         
         uhr_emb = uhr['embedding']
@@ -149,8 +149,8 @@ def main():
                     'vector_score': round(float(vector_score), 4),
                     'reasons': reasons,
                     'narratives': {
-                        'uhr': uhr_circ[:300] + "..." if len(uhr_circ) > 300 else uhr_circ,
-                        'mp': mp_circ[:300] + "..." if len(mp_circ) > 300 else mp_circ
+                        'uhr': uhr_circ[:300] + "" if len(uhr_circ) > 300 else uhr_circ,
+                        'mp': mp_circ[:300] + "" if len(mp_circ) > 300 else mp_circ
                     }
                 })
                 

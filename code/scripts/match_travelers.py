@@ -272,7 +272,7 @@ def is_traveler(narrative):
     return len(matches) > 0, matches
 
 def main():
-    print("Loading data...")
+    print("Loading data")
     uhr_data = load_json(UHR_FILE)
     if isinstance(uhr_data, dict) and 'features' in uhr_data:
         uhr_cases = [f['attributes'] for f in uhr_data['features']]

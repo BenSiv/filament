@@ -49,11 +49,12 @@ def generate_reports():
     
     try:
         # Generate reports for top 5 leads
+        # Generate reports for top 5 leads
         for i, lead in enumerate(leads[:5], 1):
             uhr_num = lead['uhr_case']
             mp_file = lead['mp_file']
             
-            print(f"Generating narrative for Lead {i}: {uhr_num} <-> {mp_file}...")
+            print(f"Generating narrative for Lead {i}: {uhr_num} <-> {mp_file}")
             
             uhr_data = get_full_case_details(conn, uhr_num, "unidentified_cases")
             mp_data = get_full_case_details(conn, mp_file, "missing_persons")

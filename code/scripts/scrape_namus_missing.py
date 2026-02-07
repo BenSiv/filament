@@ -144,7 +144,7 @@ def collect_all_case_ids(session, by_state=True):
     if by_state:
         # Query each state separately to bypass 10K limit
         for state in US_STATES:
-            print(f"Fetching cases for {state}...")
+            print(f"Fetching cases for {state}")
             skip = 0
             state_count = 0
             
@@ -165,7 +165,7 @@ def collect_all_case_ids(session, by_state=True):
             print(f"  -> {state_count} cases")
     else:
         # Single query (limited to 10K)
-        print("Fetching all cases (may be limited to 10K)...")
+        print("Fetching all cases (may be limited to 10K)")
         skip = 0
         
         while True:
@@ -179,7 +179,7 @@ def collect_all_case_ids(session, by_state=True):
             skip += 100
             
             if skip % 1000 == 0:
-                print(f"  Fetched {skip} cases...")
+                print(f"  Fetched {skip} cases")
             
             if skip >= 10000:
                 print("  Warning: Reached 10K limit. Use --by-state for full data.")
@@ -256,7 +256,7 @@ def convert_jsonl_to_json(jsonl_file, json_file):
 
 def test_api(session):
     """Quick test of API connectivity."""
-    print("Testing NamUs Missing Persons API...")
+    print("Testing NamUs Missing Persons API")
     
     # Test search
     result = search_cases(session, take=5, skip=0)
@@ -314,7 +314,7 @@ def main():
         return
     
     # Fetch full details
-    print("\nFetching full case details...")
+    print("\nFetching full case details")
     jsonl_file = args.output.replace('.json', '.jsonl')
     fetched = fetch_case_details_batch(session, case_summaries, jsonl_file)
     print(f"Fetched {fetched} new case details.")
