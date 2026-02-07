@@ -18,24 +18,46 @@ class NarrativeGenerator:
         """
         prompt = self._build_prompt(uhr_data, mp_data, shared_features)
         
-        try:
-            response = requests.post(
-                f"{self.ollama_host}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "num_predict": 500
-                    }
-                },
-                timeout=600
-            )
-            response.raise_for_status()
-            return response.json().get("response", "Could not generate narrative.")
-        except Exception as e:
-            return f"Error generating narrative: {str(e)}"
+        max_retries = 3
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    f"{self.ollama_host}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "temperature": 0.7,
+                            "num_predict": 500
+                        }
+                    },
+                    timeout=600
+                )
+                response.raise_for_status()
+                return response.json().get("response", "Could not generate narrative.")
+                
+            except requests.exceptions.HTTPError as e:
+                # If model is not found (404), it might be loading. Retry.
+                if e.response is not None and e.response.status_code == 404:
+                    print(f"[WARN] Model check failed (404). Retrying in {retry_delay}s... (Attempt {attempt+1}/{max_retries})")
+                    import time
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                
+                # For other HTTP errors, return details
+                error_msg = f"Error generating narrative: {e}"
+                if e.response is not None:
+                    error_msg += f"\nResponse Body: {e.response.text}"
+                return error_msg
+                
+            except Exception as e:
+                return f"Error generating narrative: {str(e)}"
+        
+        return "Error: Failed to generate narrative after retries (Model not found)."
             
     def _build_prompt(self, uhr_data: Dict[str, Any], mp_data: Dict[str, Any], shared_features: List[str]) -> str:
         """Constructs the LLM prompt focused on facts and alignment."""

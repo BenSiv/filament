@@ -26,8 +26,8 @@ flowchart LR
 filament/
 ├── code/                # Source code and scripts
 │   ├── core/            # Core logic (extraction, graph, search, scrapers)
-│   ├── devenv/          # Development environment configs
-│   └── scripts/         # Operational scripts / CLI tools
+│   ├── devenv/          # Development environment (Containerfile, etc.)
+│   └── scripts/         # Operational scripts / CLI tools (dev.sh)
 ├── data/
 │   ├── external/        # Third-party reference data
 │   ├── processed/       # Cleaned and canonicalized data
@@ -41,36 +41,44 @@ filament/
 
 ### Prerequisites
 
-- Python 3.10+
-- PostgreSQL with pgvector extension (optional, SQLite used by default)
-- Ollama (for local LLM inference)
+- **Podman** or **Docker**
+- **Ollama** (optional if running locally, embedded in container)
 
-### Installation
+### Running in Container (Recommended)
+
+Filament is optimized to run as a single containerized environment that includes the core engine and an embedded Ollama service for LLM inference.
 
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/filament.git
 cd filament
 
-# Create virtual environment
+# Start the environment (builds and runs the container)
+./code/scripts/dev.sh up
+
+# Initialize the database (inside the container)
+./code/scripts/dev.sh run python code/scripts/build_sqlite_db.py
+
+# Run the investigative lead discovery
+./code/scripts/dev.sh run python -m core
+```
+
+### Running Locally (Native)
+
+If you prefer to run natively, you will need Python 3.10+ and a local Ollama service.
+
+```bash
+# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # Linux/macOS
+source venv/bin/activate
 
 # Install dependencies
 pip install -r code/requirements.txt
 
-# Copy environment template
-cp code/devenv/.env.example .env
-# Edit .env with your configuration
-```
-
-### Running the System
-
-```bash
-# Initialize the database (builds filament.db)
+# Initialize database
 python3 code/scripts/build_sqlite_db.py
 
-# Run the investigative lead discovery
+# Run the system
 python3 -m code.core
 ```
 

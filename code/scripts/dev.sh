@@ -4,7 +4,10 @@
 
 set -e
 
-COMPOSE_FILE="podman-compose.yml"
+# Determine project root and compose file location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+COMPOSE_FILE="$PROJECT_ROOT/code/devenv/podman-compose.yml"
 
 # Colors for output
 RED='\033[0;31m'
@@ -45,12 +48,7 @@ status() {
 
 # View logs
 logs() {
-    local service="${1:-}"
-    if [ -n "$service" ]; then
-        podman-compose -f "$COMPOSE_FILE" logs -f "$service"
-    else
-        podman-compose -f "$COMPOSE_FILE" logs -f
-    fi
+    podman-compose -f "$COMPOSE_FILE" logs -f
 }
 
 # Enter app container shell
@@ -59,29 +57,16 @@ shell() {
     podman exec -it filament-app /bin/bash
 }
 
-# Run Python command in container
+# Run command in container
 run() {
-    podman exec -it filament-app python "$@"
+    podman exec -it filament-app "$@"
 }
 
 # Pull Ollama models
 pull_models() {
-    info "Pulling LLM models..."
-    podman exec filament-ollama ollama pull llama3
-    podman exec filament-ollama ollama pull mistral
-    info "Models pulled successfully!"
-}
-
-# Test database connection
-test_db() {
-    info "Testing PostgreSQL connection..."
-    podman exec filament-postgres psql -U filament -d filament -c "SELECT 'PostgreSQL OK' AS status;"
-    
-    info "Testing pgvector extension..."
-    podman exec filament-postgres psql -U filament -d filament -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
-    
-    info "Testing Neo4j connection..."
-    curl -s http://localhost:7474 >/dev/null && echo "Neo4j OK" || warn "Neo4j not responding"
+    info "Pulling Deepseek-R1 model..."
+    podman exec filament-app ollama pull deepseek-r1:1.5b
+    info "Model pulled successfully!"
 }
 
 # Clean up everything
@@ -97,9 +82,23 @@ clean() {
 
 # Rebuild containers
 rebuild() {
-    info "Rebuilding containers..."
+    info "Rebuilding container..."
     podman-compose -f "$COMPOSE_FILE" build --no-cache
     info "Rebuild complete"
+}
+
+# Run the full pipeline (setup + analysis)
+pipeline() {
+    info "Starting full pipeline..."
+    up
+    
+    info "Step 1: Building Database"
+    run python code/scripts/build_sqlite_db.py
+    
+    info "Step 2: Running Core Analysis"
+    run python -m core
+    
+    info "Pipeline complete!"
 }
 
 # Help message
@@ -107,25 +106,24 @@ help() {
     cat << EOF
 FILAMENT Development Environment Manager
 
-Usage: ./scripts/dev.sh [command]
+Usage: ./code/scripts/dev.sh [command]
 
 Commands:
-    up          Start all services
-    down        Stop all services
-    status      Show service status
-    logs [svc]  View logs (optionally for specific service)
+    up          Start the container environment
+    down        Stop the container environment
+    status      Show container status
+    logs        View container logs
     shell       Enter app container shell
-    run <cmd>   Run Python command in container
-    pull_models Pull Ollama LLM models
-    test_db     Test database connections
-    rebuild     Rebuild containers
+    run <cmd>   Run a command in the container (e.g., ./dev.sh run python -m core)
+    pull_models Pull the default Deepseek model
+    pipeline    Run the full workflow (Start -> Build DB -> Analyze)
+    rebuild     Rebuild the container
     clean       Remove all containers and volumes
     help        Show this help message
 
 Examples:
-    ./scripts/dev.sh up
-    ./scripts/dev.sh logs postgres
-    ./scripts/dev.sh run -m code.scrapers.bccs
+    ./code/scripts/dev.sh up
+    ./code/scripts/dev.sh pipeline
 EOF
 }
 
@@ -136,11 +134,11 @@ case "${1:-help}" in
     up)         up ;;
     down)       down ;;
     status)     status ;;
-    logs)       logs "$2" ;;
+    logs)       logs ;;
     shell)      shell ;;
     run)        shift; run "$@" ;;
     pull_models) pull_models ;;
-    test_db)    test_db ;;
+    pipeline)   pipeline ;;
     rebuild)    rebuild ;;
     clean)      clean ;;
     help|*)     help ;;
