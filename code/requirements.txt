@@ -3,13 +3,11 @@ llama-index>=0.10.0
 llama-index-embeddings-huggingface>=0.1.0
 llama-index-llms-ollama>=0.1.0
 
-# Database
-psycopg2-binary>=2.9.9
-pgvector>=0.2.4
-sqlalchemy>=2.0.0
+# Database (SQLite with sqlite-vss is the unified standard)
+# psycopg2-binary, pgvector, and sqlalchemy removed as per data unification.
 
 # Graph Database
-neo4j>=5.15.0
+# neo4j>=5.15.0 # Removed as per data unification
 # falkordb>=1.0.0  # Alternative graph DB
 
 # Data Processing

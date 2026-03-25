@@ -66,7 +66,7 @@ def generate_reports():
 **Report Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 **Match Score**: {lead['score']}
 
-## Investigative Narrative
+## Explainable AI (XAI) Match Evaluation
 {narrative}
 
 ---

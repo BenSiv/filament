@@ -87,10 +87,10 @@ class NarrativeGenerator:
             uhr_circ = uhr_data['description'].split("Circumstances:")[-1].strip()
 
         prompt = f"""
-As a cold case investigator, write a short, direct investigative hypothesis connecting these two cases.
+As a cold case investigator and forensic analyst, write a structured Explainable AI (XAI) report evaluating the potential match between these two cases.
 
 ### MISSION:
-Analyze the potential match between Missing Person {mp_data.get('name')} ({mp_data.get('file_number')}) and Unidentified Remains {uhr_data.get('case_number')}.
+Analyze the potential match between Missing Person {mp_data.get('name')} ({mp_data.get('file_number')}) and Unidentified Remains {uhr_data.get('case_number')}. Evaluate both supporting and contradicting evidence.
 
 ### CASE DATA:
 1. **Missing Person (MP)**:
@@ -107,13 +107,24 @@ Analyze the potential match between Missing Person {mp_data.get('name')} ({mp_da
 
 3. **Technical Overlaps**: {features_str}
 
-### REQUIRED STRUCTURE:
-1. **The Lead**: Start immediately with the MP's story and why it fits this UHR.
-2. **Fact Alignment**: Compare age, missing period vs. post-mortem interval (PMI). Do they align?
-3. **Contradictions & Misalignment**: Explicitly identify any facts that DO NOT match (e.g., contrasting features, timeline gaps, or conflicting descriptions). Be critical.
-4. **Geography**: Analyze the path from last seen location to finding location. Use the specific villages/reservations/landmark names provided in Circumstances.
-5. **Hypothesis**: How did they likely end up at the discovery site?
+### REQUIRED OUTPUT FORMAT (Markdown):
 
-**CRITICAL: DO NOT suggest "Next Steps", "Recommendations", or further investigation.** Keep it concise, professional, and strictly fact-driven. Ensure you highlight both the case for and the case against the match.
+### 1. Match Confidence
+- **Score**: (Provide a qualitative score: Very Low, Low, Moderate, High, or Very High)
+- **Primary Reason**: (One sentence explaining why this is or isn't a good lead)
+
+### 2. Supporting Evidence
+- (List 2-3 bullet points of explicit factual alignment, e.g., age ranges, specific tattoos, logical timelines. Do not invent facts.)
+
+### 3. Contradicting Evidence & Misalignments
+- (List any conflicting facts, e.g., race mismatch, PMI inconsistencies, diverging physical traits. BE CRITICAL.)
+
+### 4. Geographic Feasibility
+- (Analyze the physical distance and plausible transit from the last seen location to the discovery site.)
+
+### 5. Final Investigative Hypothesis
+- (A concise 2-3 sentence paragraph theorizing how the MP could equal the UHR, assuming the match is true.)
+
+**CRITICAL RULES**: Do not invent information. If an attribute (like eye color) is not mentioned in the case data, do not assume it matches. Do not make recommendations for law enforcement.
 """
         return prompt
