@@ -56,6 +56,38 @@ CREATE TABLE IF NOT EXISTS ai_note(
   created_at REAL DEFAULT (julianday('now')),
   updated_at REAL DEFAULT (julianday('now'))
 );
+CREATE TABLE IF NOT EXISTS ai_note_link(
+  from_nid INTEGER,
+  to_nid INTEGER,
+  link_type TEXT,
+  weight REAL DEFAULT 1.0,
+  updated_at REAL DEFAULT (julianday('now'))
+);
+CREATE TABLE IF NOT EXISTS ai_retrieval(
+  qid INTEGER PRIMARY KEY,
+  query_text TEXT,
+  created_at REAL DEFAULT (julianday('now'))
+);
+CREATE TABLE IF NOT EXISTS ai_retrieval_note(
+  qid INTEGER,
+  nid INTEGER,
+  rank INTEGER,
+  score REAL,
+  tier_weight REAL,
+  reinforcement_delta REAL
+);
+CREATE TABLE IF NOT EXISTS ai_review(
+  review_id INTEGER PRIMARY KEY,
+  qid INTEGER,
+  nid INTEGER,
+  atomicity_status TEXT,
+  connectivity_status TEXT,
+  duplication_status TEXT,
+  title_status TEXT,
+  promotion_status TEXT,
+  action_summary TEXT,
+  created_at REAL DEFAULT (julianday('now'))
+);
 CREATE TABLE IF NOT EXISTS ai_vector(
   vid INTEGER PRIMARY KEY,
   source_type TEXT,
@@ -66,9 +98,22 @@ CREATE TABLE IF NOT EXISTS ai_vector(
 CREATE INDEX IF NOT EXISTS ai_note_content_hash_idx ON ai_note(content_hash);
 CREATE INDEX IF NOT EXISTS ai_note_source_type_idx ON ai_note(source_type);
 CREATE INDEX IF NOT EXISTS ai_note_source_ref_idx ON ai_note(source_ref);
+CREATE INDEX IF NOT EXISTS ai_note_link_from_idx ON ai_note_link(from_nid);
+CREATE INDEX IF NOT EXISTS ai_note_link_to_idx ON ai_note_link(to_nid);
+CREATE INDEX IF NOT EXISTS ai_retrieval_note_qid_idx ON ai_retrieval_note(qid);
+CREATE INDEX IF NOT EXISTS ai_retrieval_note_nid_idx ON ai_retrieval_note(nid);
 """
 
-def insert_note(cur, title, body, source_type, source_ref="", tier=0, metadata=None):
+def insert_note(
+    cur,
+    title,
+    body,
+    source_type,
+    source_ref="",
+    tier=0,
+    metadata=None,
+    process_level="raw",
+):
     """Insert a single note, skipping duplicates by content hash."""
     note = normalize_note(
         title=title,
@@ -77,6 +122,7 @@ def insert_note(cur, title, body, source_type, source_ref="", tier=0, metadata=N
         source_ref=source_ref,
         tier=tier,
         metadata=metadata,
+        process_level=process_level,
     )
     note_hash = content_hash(note["body"])
     cur.execute("SELECT 1 FROM ai_note WHERE content_hash = ? LIMIT 1", (note_hash,))
@@ -94,18 +140,72 @@ def insert_note(cur, title, body, source_type, source_ref="", tier=0, metadata=N
             tier, title, body, source_type, source_ref, process_level,
             metadata, artifact_weight, heat, retrieval_count,
             content_hash, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'raw', ?, ?, 1.0, 0, ?, julianday('now'), julianday('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1.0, 0, ?, julianday('now'), julianday('now'))
     """, (
         note["tier"],
         note["title"],
         note["body"],
         note["source_type"],
         note["source_ref"],
+        note["process_level"],
         serialize_metadata(note["metadata"]),
         weight,
         note_hash,
     ))
     return cur.lastrowid
+
+
+def insert_note_link(cur, from_nid, to_nid, link_type, weight=1.0):
+    if not from_nid or not to_nid:
+        return
+    cur.execute(
+        """
+        SELECT 1 FROM ai_note_link
+        WHERE from_nid = ? AND to_nid = ? AND link_type = ?
+        LIMIT 1
+        """,
+        (from_nid, to_nid, link_type),
+    )
+    if cur.fetchone():
+        return
+    cur.execute(
+        """
+        INSERT INTO ai_note_link(from_nid, to_nid, link_type, weight, updated_at)
+        VALUES (?, ?, ?, ?, julianday('now'))
+        """,
+        (from_nid, to_nid, link_type, weight),
+    )
+
+
+def log_retrieval(cur, query_text):
+    cur.execute(
+        "INSERT INTO ai_retrieval(query_text, created_at) VALUES (?, julianday('now'))",
+        (query_text,),
+    )
+    return cur.lastrowid
+
+
+def log_retrieval_note(cur, qid, nid, rank, score=0.0, tier_weight=1.0, reinforcement_delta=0.0):
+    cur.execute(
+        """
+        INSERT INTO ai_retrieval_note(
+            qid, nid, rank, score, tier_weight, reinforcement_delta
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (qid, nid, rank, score, tier_weight, reinforcement_delta),
+    )
+
+
+def log_review(cur, qid, nid, promotion_status, action_summary):
+    cur.execute(
+        """
+        INSERT INTO ai_review(
+            qid, nid, atomicity_status, connectivity_status, duplication_status,
+            title_status, promotion_status, action_summary, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, julianday('now'))
+        """,
+        (qid, nid, "unknown", "unknown", "unknown", "unknown", promotion_status, action_summary),
+    )
 
 def ingest_uhr_cases(fossil_cur, filament_cur, batch=500):
     filament_cur.execute("""
@@ -116,6 +216,7 @@ def ingest_uhr_cases(fossil_cur, filament_cur, batch=500):
         WHERE description IS NOT NULL AND length(description) > 30
     """)
     count = 0
+    note_map = {}
     while True:
         rows = filament_cur.fetchmany(batch)
         if not rows:
@@ -133,13 +234,23 @@ def ingest_uhr_cases(fossil_cur, filament_cur, batch=500):
                 f"**DNA Status**: {dna or 'Unknown'} | **Dental**: {dental or 'Unknown'}\n\n"
                 f"## Case Description\n{desc}"
             )
-            insert_note(fossil_cur, title, body, "unidentified", source_ref=case_num,
-                        tier=1, metadata={"case_number": case_num, "location": loc})
+            nid = insert_note(
+                fossil_cur,
+                title,
+                body,
+                "unidentified",
+                source_ref=case_num,
+                tier=1,
+                metadata={"case_number": case_num, "location": loc},
+                process_level="normalized",
+            )
+            if nid:
+                note_map[case_num] = nid
             count += 1
         fossil_cur.connection.commit()
         print(f"  UHR cases: {count} inserted...")
     print(f"  -> Total UHR cases: {count}")
-    return count
+    return count, note_map
 
 def ingest_missing_persons(fossil_cur, filament_cur, batch=500):
     filament_cur.execute("""
@@ -149,6 +260,7 @@ def ingest_missing_persons(fossil_cur, filament_cur, batch=500):
         WHERE description IS NOT NULL AND length(description) > 30
     """)
     count = 0
+    note_map = {}
     while True:
         rows = filament_cur.fetchmany(batch)
         if not rows:
@@ -166,34 +278,55 @@ def ingest_missing_persons(fossil_cur, filament_cur, batch=500):
                 f"**DNA Status**: {dna or 'Unknown'} | **Dental**: {dental or 'Unknown'}\n\n"
                 f"## Case Description\n{desc}"
             )
-            insert_note(fossil_cur, title, body, "missing_person", source_ref=file_num,
-                        tier=1, metadata={"file_number": file_num, "name": display_name})
+            nid = insert_note(
+                fossil_cur,
+                title,
+                body,
+                "missing_person",
+                source_ref=file_num,
+                tier=1,
+                metadata={"file_number": file_num, "name": display_name},
+                process_level="normalized",
+            )
+            if nid:
+                note_map[file_num] = nid
             count += 1
         fossil_cur.connection.commit()
         print(f"  Missing persons: {count} inserted...")
     print(f"  -> Total missing persons: {count}")
-    return count
+    return count, note_map
 
 def ingest_reddit(fossil_cur):
     if not os.path.exists(REDDIT_JSON):
         print("  Reddit narratives file not found, skipping.")
-        return 0
+        return 0, {}
     with open(REDDIT_JSON) as f:
         posts = json.load(f)
     count = 0
+    note_map = {}
     for post in posts:
         title = f"Reddit: {post.get('title', 'Unknown')[:90]}"
         url = post.get("url", "")
         selftext = post.get("selftext", "")
         body = f"**Source**: {url}\n\n{selftext}"
-        insert_note(fossil_cur, title, body, "reddit", source_ref=url, tier=0,
-                    metadata={"url": url, "subreddit": post.get("subreddit", "")})
+        nid = insert_note(
+            fossil_cur,
+            title,
+            body,
+            "reddit",
+            source_ref=url,
+            tier=0,
+            metadata={"url": url, "subreddit": post.get("subreddit", "")},
+            process_level="raw",
+        )
+        if nid:
+            note_map[url] = nid
         count += 1
     fossil_cur.connection.commit()
     print(f"  -> Reddit narratives: {count}")
-    return count
+    return count, note_map
 
-def ingest_leads(fossil_cur):
+def ingest_leads(fossil_cur, uhr_note_map, reddit_note_map):
     if not os.path.exists(LEADS_JSON):
         print("  Leads file not found, skipping.")
         return 0
@@ -213,8 +346,27 @@ def ingest_leads(fossil_cur):
             f"**Semantic Score**: {score:.2f}\n\n"
             f"## AI Forensic Analysis (qwen3.5:0.8b)\n{analysis}"
         )
-        insert_note(fossil_cur, title, body, "lead", source_ref=url, tier=2,
-                    metadata={"uhr_case": case, "score": score})
+        nid = insert_note(
+            fossil_cur,
+            title,
+            body,
+            "lead",
+            source_ref=url,
+            tier=2,
+            metadata={"uhr_case": case, "score": score},
+            process_level="lead_candidate",
+        )
+        if nid:
+            qid = log_retrieval(fossil_cur, f"lead:{case}")
+            uhr_nid = uhr_note_map.get(case)
+            reddit_nid = reddit_note_map.get(url)
+            if uhr_nid:
+                insert_note_link(fossil_cur, nid, uhr_nid, "supports", weight=1.0)
+                log_retrieval_note(fossil_cur, qid, uhr_nid, rank=1, score=1.0, tier_weight=1.0)
+            if reddit_nid:
+                insert_note_link(fossil_cur, nid, reddit_nid, "supports", weight=1.0)
+                log_retrieval_note(fossil_cur, qid, reddit_nid, rank=2, score=score, tier_weight=0.5)
+            log_review(fossil_cur, qid, nid, "candidate", "Lead candidate created from retrieval.")
         count += 1
     fossil_cur.connection.commit()
     print(f"  -> AI-generated leads: {count}")
@@ -254,16 +406,16 @@ def main():
     filament_cur = filament_conn.cursor()
 
     print("\n[1/4] Ingesting Unidentified Human Remains cases...")
-    n_uhr = ingest_uhr_cases(fossil_cur, filament_cur)
+    n_uhr, uhr_note_map = ingest_uhr_cases(fossil_cur, filament_cur)
 
     print("\n[2/4] Ingesting Missing Persons cases...")
-    n_mp = ingest_missing_persons(fossil_cur, filament_cur)
+    n_mp, _ = ingest_missing_persons(fossil_cur, filament_cur)
 
     print("\n[3/4] Ingesting Reddit sleuth narratives...")
-    n_reddit = ingest_reddit(fossil_cur)
+    n_reddit, reddit_note_map = ingest_reddit(fossil_cur)
 
     print("\n[4/4] Ingesting AI-generated forensic leads...")
-    n_leads = ingest_leads(fossil_cur)
+    n_leads = ingest_leads(fossil_cur, uhr_note_map, reddit_note_map)
 
     filament_conn.close()
     fossil_conn.close()

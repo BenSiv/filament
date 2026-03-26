@@ -37,7 +37,7 @@ def ingest_to_fossil():
     cur.execute("INSERT OR REPLACE INTO config(name, value, mtime) VALUES('agent-model','qwen3.5:0.8b', strftime('%s','now'))")
     cur.execute("INSERT OR REPLACE INTO config(name, value, mtime) VALUES('agent-embedding-model','nomic-embed-text', strftime('%s','now'))")
 
-    # Create the ai_note table if it doesn't exist
+    # Create the knowledge-layer tables if they don't exist
     cur.executescript("""
         CREATE TABLE IF NOT EXISTS ai_note(
           nid INTEGER PRIMARY KEY,
@@ -64,6 +64,38 @@ def ingest_to_fossil():
           created_at REAL DEFAULT (julianday('now')),
           updated_at REAL DEFAULT (julianday('now'))
         );
+        CREATE TABLE IF NOT EXISTS ai_note_link(
+          from_nid INTEGER,
+          to_nid INTEGER,
+          link_type TEXT,
+          weight REAL DEFAULT 1.0,
+          updated_at REAL DEFAULT (julianday('now'))
+        );
+        CREATE TABLE IF NOT EXISTS ai_retrieval(
+          qid INTEGER PRIMARY KEY,
+          query_text TEXT,
+          created_at REAL DEFAULT (julianday('now'))
+        );
+        CREATE TABLE IF NOT EXISTS ai_retrieval_note(
+          qid INTEGER,
+          nid INTEGER,
+          rank INTEGER,
+          score REAL,
+          tier_weight REAL,
+          reinforcement_delta REAL
+        );
+        CREATE TABLE IF NOT EXISTS ai_review(
+          review_id INTEGER PRIMARY KEY,
+          qid INTEGER,
+          nid INTEGER,
+          atomicity_status TEXT,
+          connectivity_status TEXT,
+          duplication_status TEXT,
+          title_status TEXT,
+          promotion_status TEXT,
+          action_summary TEXT,
+          created_at REAL DEFAULT (julianday('now'))
+        );
         CREATE TABLE IF NOT EXISTS ai_vector(
           vid INTEGER PRIMARY KEY,
           source_type TEXT,
@@ -74,6 +106,10 @@ def ingest_to_fossil():
         CREATE INDEX IF NOT EXISTS ai_note_content_hash_idx ON ai_note(content_hash);
         CREATE INDEX IF NOT EXISTS ai_note_source_type_idx ON ai_note(source_type);
         CREATE INDEX IF NOT EXISTS ai_note_source_ref_idx ON ai_note(source_ref);
+        CREATE INDEX IF NOT EXISTS ai_note_link_from_idx ON ai_note_link(from_nid);
+        CREATE INDEX IF NOT EXISTS ai_note_link_to_idx ON ai_note_link(to_nid);
+        CREATE INDEX IF NOT EXISTS ai_retrieval_note_qid_idx ON ai_retrieval_note(qid);
+        CREATE INDEX IF NOT EXISTS ai_retrieval_note_nid_idx ON ai_retrieval_note(nid);
     """)
 
     print(f"Inserting {len(posts)} Reddit narratives as AI Notes...")
@@ -87,10 +123,11 @@ def ingest_to_fossil():
         note = normalize_note(
             title=title,
             body=body,
-            source_type="manual",
+            source_type="reddit",
             source_ref=url,
             tier=0,
             metadata={"source_type": "reddit", "url": url, "subreddit": post.get("subreddit", "")},
+            process_level="raw",
         )
         note_hash = content_hash(note["body"])
 
