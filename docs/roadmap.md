@@ -6,6 +6,7 @@ This roadmap keeps **Fossil-SCM** on the path of a **general self-managed knowle
 - **Fossil-SCM** is domain-neutral and must not embed Filament-specific concepts.
 - **Filament** owns domain logic (cases, leads, matching) and exports only notes.
 - The boundary is a **general knowledge note schema** (title, body, source, metadata).
+- **Git is the only VCS** for this repository; Fossil is used only as a knowledge database.
 
 ---
 

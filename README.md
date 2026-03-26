@@ -87,6 +87,11 @@ python3 -m code.core
 Filament can stream its curated narratives into a local Fossil repository so you can
 query them with Fossil's AI tooling and web UI.
 
+This repository is **Git-only for version control**. Fossil is used strictly as a
+local knowledge database for AI notes, vectors, and retrieval workflows. The
+knowledge DB and workspace (`data/knowledge.fossil`, `data/knowledge_workspace/`)
+should remain local and uncommitted.
+
 ```bash
 # Initialize Fossil knowledge base (one-time)
 fossil init data/knowledge.fossil

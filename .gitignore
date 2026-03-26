@@ -90,6 +90,8 @@ data/external/*
 *.db
 *.sqlite
 *.sqlite3
+*.fossil
+data/knowledge_workspace/
 
 # Model artifacts
 models/

@@ -8,7 +8,7 @@ code_dir = os.path.dirname(test_dir)
 if code_dir not in sys.path:
     sys.path.insert(0, code_dir)
 
-from core.knowledge_note import content_hash, normalize_note
+from core.knowledge_note import content_hash, normalize_note, validate_note_contract
 
 
 def test_normalize_note_trims_title_and_requires_fields():
@@ -31,3 +31,14 @@ def test_normalize_note_trims_title_and_requires_fields():
 def test_content_hash_is_stable():
     assert content_hash("abc") == content_hash("abc")
     assert content_hash("abc") != content_hash("abcd")
+
+
+def test_validate_note_contract_rejects_extra_fields():
+    note = normalize_note(
+        title="Title",
+        body="Body text",
+        source_type="generic",
+    )
+    note["extra_field"] = "nope"
+    with pytest.raises(ValueError):
+        validate_note_contract(note)

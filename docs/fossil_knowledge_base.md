@@ -6,6 +6,8 @@ This document describes the Fossil-backed knowledge base used for narrative RAG 
 - **Fossil repo DB** (`data/knowledge.fossil`) stores AI note tables for narrative content.
 - Filament ingests structured case data + Reddit narratives into these tables.
 - Fossil can then drive UI and retrieval workflows on top of those notes.
+- **Git is the only VCS for this repo.** Fossil is used strictly as a local knowledge
+  database and should not manage source code history here.
 
 ## Quick Start
 

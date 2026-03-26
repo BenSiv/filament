@@ -18,6 +18,13 @@ It is intentionally domain-agnostic.
 - Title and body must be non-empty
 - Metadata must be JSON-serializable
 - Dedupe is performed on a content hash of the body
+- Only the fields listed above are allowed at the top level. Any extra data should live
+  in `metadata` with neutral keys.
+
+## VCS Boundary
+- This repository is Git-only for version control.
+- Fossil is used strictly as a knowledge database for AI processing (notes, vectors,
+  retrieval), not as a source control system.
 
 ## Usage
 Filament builds notes according to this contract and writes them into Fossil AI tables.
