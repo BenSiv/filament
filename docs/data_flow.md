@@ -27,9 +27,14 @@ flowchart TD
         Flat_UHR[namus_unidentified_flat.json]
     end
 
-    subgraph Database [PostgreSQL + pgvector]
+    subgraph Database [SQLite + sqlite-vss]
         DB_MP[(Table: missing_persons)]
         DB_UHR[(Table: unidentified_cases)]
+    end
+
+    subgraph FossilKB [Fossil AI Knowledge Base]
+        KB_Notes[(ai_note)]
+        KB_Vectors[(ai_vector)]
     end
 
     subgraph Matchers [Matching Engines]
@@ -72,6 +77,11 @@ flowchart TD
     M_Rich -- "Refined Ranking" --> Leads
 
     DB_MP & DB_UHR --> M_RAG
+
+    %% Fossil ingestion
+    DB_MP & DB_UHR --> KB_Notes
+    Leads --> KB_Notes
+    KB_Notes --> KB_Vectors
 
     %% Reporting
     Leads --> Report_Leads

@@ -82,6 +82,27 @@ python3 code/scripts/build_sqlite_db.py
 python3 -m code.core
 ```
 
+### Fossil Knowledge Base (Optional, Recommended for RAG UI)
+
+Filament can stream its curated narratives into a local Fossil repository so you can
+query them with Fossil's AI tooling and web UI.
+
+```bash
+# Initialize Fossil knowledge base (one-time)
+fossil init data/knowledge.fossil
+fossil open data/knowledge.fossil data/knowledge_workspace
+
+# Ingest all Filament data into Fossil (UHR, Missing Persons, Reddit, Leads)
+python3 code/scripts/ingest_all_to_fossil.py
+
+# Verify AI tables are ready
+fossil ai status -R data/knowledge.fossil
+```
+
+Notes:
+- This flow uses SQLite inserts into Fossil's AI tables for speed and reproducibility.
+- If your Fossil build has a separate semantic indexing command, run it after ingestion.
+
 ## 📚 Documentation
 
 | Document | Description |
@@ -92,6 +113,8 @@ python3 -m code.core
 | [Bioinformatics](docs/bioinformatics.md) | Phenotype and isotope analysis |
 | [Tech Stack](docs/tech_stack.md) | Technology choices and setup |
 | [Contributing](docs/contributing.md) | How to help with Filament |
+| [Fossil Knowledge Base](docs/fossil_knowledge_base.md) | Fossil AI setup and ingestion |
+| [Roadmap](docs/roadmap.md) | Dual-track plan and missing features |
 
 ## 🔒 Privacy & Ethics
 

@@ -25,6 +25,6 @@ ollama pull deepseek-r1:1.5b
 echo "[INFO] Models after pull:"
 curl -s http://localhost:11434/api/tags
 
-echo "[INFO] Starting Filament Core"
-# Run the application as the filament user
-exec su filament -c "python -m core"
+echo "[INFO] Starting Development Environment"
+# Keep container alive so dev.sh run can execute commands
+exec sleep infinity

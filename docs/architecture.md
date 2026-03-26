@@ -15,21 +15,21 @@ flowchart TB
     
     subgraph Processing["Processing Layer"]
         direction TB
-        Extract[Entity Extraction<br/>LlamaIndex + Unstract]
+        Extract[Entity Extraction<br/>LLM + parsers]
         Embed[Embedding Generation<br/>sentence-transformers]
         Structure[Schema Mapping]
     end
     
     subgraph Storage["Storage Layer"]
         direction LR
-        PG[(PostgreSQL<br/>+ pgvector)]
-        Neo[(Neo4j<br/>Knowledge Graph)]
+        SQLite[(SQLite<br/>+ sqlite-vss)]
+        Fossil[(Fossil AI Knowledge Base)]
     end
     
     subgraph Analysis["Analysis Layer"]
         direction TB
-        Vector[Vector Search]
-        Graph[Graph Traversal]
+        Vector[Vector Search<br/>sqlite-vss]
+        KB[RAG Retrieval<br/>Fossil AI]
         LLM[LLM Reasoning<br/>Ollama]
     end
     
@@ -67,7 +67,7 @@ Transforms raw data into queryable entities:
 
 ### 3. Storage Layer
 
-Dual-database architecture for complementary query patterns:
+Primary data stores for structured and narrative data:
 
 ```mermaid
 erDiagram
@@ -105,7 +105,7 @@ erDiagram
 Multi-modal search and reasoning:
 
 - **Vector Search**: Semantic similarity matching (e.g., "bunnyhug" ↔ "hooded sweatshirt")
-- **Graph Traversal**: Find connections through shared attributes
+- **RAG Retrieval**: Query narrative notes inside Fossil AI tables
 - **LLM Reasoning**: Generate match hypotheses with explainable reasoning
 
 ## Data Flow
@@ -124,10 +124,11 @@ sequenceDiagram
     P->>P: Extract entities
     P->>P: Generate embeddings
     P->>DB: Store entities + vectors
+    P->>DB: Store narrative notes (Fossil AI)
     
     U->>A: Search query
     A->>DB: Vector similarity search
-    A->>DB: Graph pattern match
+    A->>DB: Narrative note retrieval
     A->>A: LLM reasoning
     A->>U: Ranked match candidates
 ```
@@ -161,6 +162,6 @@ Key privacy measures:
 
 | Option | Use Case | Components |
 |--------|----------|------------|
-| **Local Development** | Research & prototyping | SQLite, Ollama, single machine |
-| **Lab Deployment** | Investigation team | PostgreSQL, Neo4j, internal network |
+| **Local Development** | Research & prototyping | SQLite, Fossil, Ollama, single machine |
+| **Lab Deployment** | Investigation team | SQLite + Fossil, internal network |
 | **Secure Production** | Operational use | Air-gapped, encrypted storage, audit logging |

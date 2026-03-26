@@ -17,8 +17,8 @@ flowchart TB
     end
     
     subgraph Database["Data Storage"]
-        PG[(PostgreSQL<br/>+ pgvector)]
-        Neo[(Neo4j<br/>Graph DB)]
+        SQLite[(SQLite<br/>+ sqlite-vss)]
+        Fossil[(Fossil AI Knowledge Base)]
     end
     
     subgraph Viz["Visualization"]
@@ -176,142 +176,52 @@ def query_ollama(prompt: str, model: str = "llama3") -> str:
 
 ---
 
-## 4. Primary Database: PostgreSQL + pgvector
+## 4. Primary Database: SQLite + sqlite-vss
 
-**Purpose**: Store structured data and vector embeddings in a single database.
+**Purpose**: Store structured case data and lightweight vector embeddings locally.
 
-### Why PostgreSQL + pgvector?
-- Mature, reliable RDBMS
-- Vector similarity search without separate vector DB
-- Full SQL capabilities for structured queries
-- ACID compliance for data integrity
+### Why SQLite + sqlite-vss?
+- Zero-service footprint (easy local deployment)
+- Works well for prototype and small-team workflows
+- Compatible with Filament's current data loading scripts
 
 ### Installation
 
 ```bash
-# Ubuntu/Debian
-sudo apt install postgresql postgresql-contrib
+# SQLite is typically preinstalled
+sqlite3 --version
 
-# Install pgvector extension
-git clone https://github.com/pgvector/pgvector.git
-cd pgvector
-make && sudo make install
-
-# Enable in database
-psql -d filament -c "CREATE EXTENSION vector;"
+# sqlite-vss setup varies by platform. See project docs for installation.
 ```
 
-### Schema Design
-
-```sql
--- Enable extensions
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS postgis;  -- For geospatial
-
--- Cases table (unidentified remains)
-CREATE TABLE unidentified_cases (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    case_number VARCHAR(50) UNIQUE NOT NULL,
-    source VARCHAR(50) NOT NULL,
-    discovery_date DATE,
-    location GEOGRAPHY(POINT, 4326),
-    description TEXT,
-    embedding VECTOR(384),  -- For semantic search
-    metadata JSONB,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Missing persons table
-CREATE TABLE missing_persons (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    file_number VARCHAR(50) UNIQUE NOT NULL,
-    source VARCHAR(50) NOT NULL,
-    last_seen_date DATE,
-    last_seen_location GEOGRAPHY(POINT, 4326),
-    physical_description TEXT,
-    embedding VECTOR(384),
-    metadata JSONB,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Vector similarity index
-CREATE INDEX ON unidentified_cases 
-USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-
-CREATE INDEX ON missing_persons 
-USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-
--- Geospatial index
-CREATE INDEX ON unidentified_cases USING GIST (location);
-CREATE INDEX ON missing_persons USING GIST (last_seen_location);
-```
+### Schema Notes
+- `data/filament.db` stores `unidentified_cases` and `missing_persons`.
+- Embeddings are stored alongside structured records.
 
 ---
 
-## 5. Graph Database: Neo4j
+## 5. Knowledge Base: Fossil AI
 
-**Purpose**: Model complex relationships between entities for inference-based matching.
+**Purpose**: Maintain a narrative knowledge base for RAG-style retrieval and UI access.
 
-### Why Neo4j?
-- Industry-standard graph database
-- Cypher query language
-- Graph algorithms library
-- Visualization tools
+### Why Fossil AI?
+- Durable, local, dependency-light store for narrative notes
+- AI tables integrated directly into the repo database
+- Clean handoff from ETL → indexing → UI chat
 
-### Alternative: FalkorDB
-For lighter deployments, [FalkorDB](https://www.falkordb.com/) offers Redis-compatible graph operations.
-
-### Installation
+### Setup
 
 ```bash
-# Docker deployment
-docker run -d \
-    --name neo4j \
-    -p 7474:7474 -p 7687:7687 \
-    -e NEO4J_AUTH=neo4j/password \
-    -v neo4j_data:/data \
-    neo4j:5.15
+fossil init data/knowledge.fossil
+fossil open data/knowledge.fossil data/knowledge_workspace
+fossil ai init -R data/knowledge.fossil
+fossil ai status -R data/knowledge.fossil
 ```
 
-### Python Integration
+### Ingestion
 
-```python
-from neo4j import GraphDatabase
-
-class GraphDB:
-    def __init__(self, uri: str, user: str, password: str):
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
-    
-    def create_person(self, case_id: str, properties: dict):
-        with self.driver.session() as session:
-            session.run(
-                """
-                CREATE (p:Person {case_id: $case_id})
-                SET p += $props
-                """,
-                case_id=case_id,
-                props=properties
-            )
-    
-    def find_matches(self, case_id: str, threshold: float = 0.7):
-        with self.driver.session() as session:
-            result = session.run(
-                """
-                MATCH (u:Person {case_id: $case_id, type: 'unidentified'})
-                MATCH (m:Person {type: 'missing'})
-                WHERE u <> m
-                WITH u, m, 
-                     gds.similarity.cosine(u.embedding, m.embedding) AS sim
-                WHERE sim > $threshold
-                RETURN m.case_id, sim
-                ORDER BY sim DESC
-                """,
-                case_id=case_id,
-                threshold=threshold
-            )
-            return list(result)
+```bash
+python3 code/scripts/ingest_all_to_fossil.py
 ```
 
 ---
@@ -372,9 +282,10 @@ map_viz.save_to_html(file_name="bc_cold_cases_map.html")
 | Tool | Purpose | Installation |
 |------|---------|--------------|
 | Python 3.10+ | Primary language | System package manager |
-| PostgreSQL 15+ | Primary database | `apt install postgresql` |
+| SQLite | Primary database | System package manager |
+| Fossil | Knowledge base + AI tables | `apt install fossil` or https://fossil-scm.org |
 | Ollama | Local LLM | `curl -fsSL https://ollama.ai/install.sh \| sh` |
-| Docker | Neo4j, services | Docker Desktop or `apt install docker.io` |
+| Docker | Optional dev services | Docker Desktop or `apt install docker.io` |
 
 ### Python Environment
 
@@ -388,8 +299,8 @@ pip install -r requirements.txt
 
 # Verify installation
 python -c "import llama_index; print('LlamaIndex OK')"
-python -c "import psycopg2; print('PostgreSQL OK')"
-python -c "from neo4j import GraphDatabase; print('Neo4j OK')"
+python -c "import sqlite3; print('SQLite OK')"
+fossil version
 ```
 
 ### Environment Variables
@@ -407,8 +318,7 @@ cp .env.example .env
 
 | Component | Scaling Strategy |
 |-----------|------------------|
-| **PostgreSQL** | Connection pooling, read replicas |
-| **pgvector** | IVFFlat index with appropriate list count |
-| **Neo4j** | Memory configuration, index optimization |
+| **SQLite** | Proper indexing and batching |
+| **Fossil AI** | Keep notes concise and structured |
 | **Ollama** | GPU acceleration, model quantization |
 | **Kepler.gl** | Data aggregation for large point sets |

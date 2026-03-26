@@ -22,6 +22,14 @@ def setup_parser() -> argparse.ArgumentParser:
     scrape_parser.add_argument("source", choices=["namus", "reddit", "all"], help="Data source to scrape")
     scrape_parser.add_argument("--limit", type=int, default=100, help="Number of items to fetch per endpoint")
     
+    # Ingest command
+    ingest_parser = subparsers.add_parser("ingest", help="Ingest raw data into the SQLite vector store")
+    ingest_parser.add_argument("source", choices=["reddit"], help="Source to ingest")
+    
+    # Match Reddit command
+    match_reddit_parser = subparsers.add_parser("match-reddit", help="Run RAG lead generation over Reddit narratives")
+    match_reddit_parser.add_argument("--limit", type=int, default=50, help="Number of UHR cases to evaluate")
+    
     return parser
 
 def cmd_match(args):
@@ -59,6 +67,21 @@ def cmd_scrape(args):
     else:
         print(f"Scraper for {args.source} is not fully wired to CLI yet.")
 
+def cmd_ingest(args):
+    if args.source == "reddit":
+        try:
+            from scripts.ingest_reddit_to_vss import ingest_reddit
+            ingest_reddit()
+        except ImportError as e:
+            print(f"Error loading ingest script: {e}")
+
+def cmd_match_reddit(args):
+    try:
+        from scripts.match_reddit_sleuths import generate_reddit_leads
+        generate_reddit_leads(limit=args.limit)
+    except ImportError as e:
+        print(f"Error loading reddit matcher: {e}")
+
 def main():
     parser = setup_parser()
     args = parser.parse_args()
@@ -69,6 +92,10 @@ def main():
         cmd_report(args)
     elif args.command == "scrape":
         cmd_scrape(args)
+    elif args.command == "ingest":
+        cmd_ingest(args)
+    elif args.command == "match-reddit":
+        cmd_match_reddit(args)
     else:
         parser.print_help()
 
