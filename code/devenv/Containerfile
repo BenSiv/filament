@@ -16,15 +16,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     curl \
     git \
-    fossil \
     chromium \
     chromium-driver \
     sqlite3 \
+    tcl \
+    tcl-dev \
+    zlib1g-dev \
+    libssl-dev \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Ollama
 RUN curl -fsSL https://ollama.com/install.sh | sh
+
+# Build Fossil from fork (custom AI tooling)
+RUN git clone --depth 1 -b master https://github.com/BenSiv/fossil-scm.git /tmp/fossil-scm \
+    && cd /tmp/fossil-scm \
+    && mkdir -p bin \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install \
+    && rm -rf /tmp/fossil-scm
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash filament
