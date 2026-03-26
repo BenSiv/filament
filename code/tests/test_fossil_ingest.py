@@ -1,7 +1,14 @@
 import json
+import os
 import sqlite3
+import sys
 
-from code.scripts import ingest_all_to_fossil as ingest
+test_dir = os.path.dirname(os.path.abspath(__file__))
+code_dir = os.path.dirname(test_dir)
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
+from scripts import ingest_all_to_fossil as ingest
 
 
 def _setup_db():

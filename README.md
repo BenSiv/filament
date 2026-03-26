@@ -115,6 +115,7 @@ Notes:
 | [Contributing](docs/contributing.md) | How to help with Filament |
 | [Fossil Knowledge Base](docs/fossil_knowledge_base.md) | Fossil AI setup and ingestion |
 | [Roadmap](docs/roadmap.md) | Dual-track plan and missing features |
+| [Knowledge Note Contract](docs/knowledge_note_contract.md) | Neutral exchange schema |
 
 ## 🔒 Privacy & Ethics
 

@@ -15,11 +15,14 @@ import os
 import sys
 import json
 import sqlite3
-import hashlib
 
 scripts_dir = os.path.dirname(os.path.abspath(__file__))
 code_dir = os.path.dirname(scripts_dir)
 root_dir = os.path.dirname(code_dir)
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
+from core.knowledge_note import content_hash, normalize_note, serialize_metadata
 
 FOSSIL_DB = os.path.join(root_dir, "data/knowledge.fossil")
 FOSSIL_WORKSPACE = os.path.join(root_dir, "data/knowledge_workspace")
@@ -65,16 +68,20 @@ CREATE INDEX IF NOT EXISTS ai_note_source_type_idx ON ai_note(source_type);
 CREATE INDEX IF NOT EXISTS ai_note_source_ref_idx ON ai_note(source_ref);
 """
 
-def sha1(text):
-    return hashlib.sha1(text.encode("utf-8", errors="replace")).hexdigest()
-
 def insert_note(cur, title, body, source_type, source_ref="", tier=0, metadata=None):
     """Insert a single note, skipping duplicates by content hash."""
-    content_hash = sha1(body)
-    cur.execute("SELECT 1 FROM ai_note WHERE content_hash = ? LIMIT 1", (content_hash,))
+    note = normalize_note(
+        title=title,
+        body=body,
+        source_type=source_type,
+        source_ref=source_ref,
+        tier=tier,
+        metadata=metadata,
+    )
+    note_hash = content_hash(note["body"])
+    cur.execute("SELECT 1 FROM ai_note WHERE content_hash = ? LIMIT 1", (note_hash,))
     if cur.fetchone():
         return None
-    meta = json.dumps(metadata or {})
     weight = {
         "unidentified": 0.20,
         "missing_person": 0.20,
@@ -88,7 +95,16 @@ def insert_note(cur, title, body, source_type, source_ref="", tier=0, metadata=N
             metadata, artifact_weight, heat, retrieval_count,
             content_hash, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, 'raw', ?, ?, 1.0, 0, ?, julianday('now'), julianday('now'))
-    """, (tier, title[:200], body, source_type, source_ref, meta, weight, content_hash))
+    """, (
+        note["tier"],
+        note["title"],
+        note["body"],
+        note["source_type"],
+        note["source_ref"],
+        serialize_metadata(note["metadata"]),
+        weight,
+        note_hash,
+    ))
     return cur.lastrowid
 
 def ingest_uhr_cases(fossil_cur, filament_cur, batch=500):

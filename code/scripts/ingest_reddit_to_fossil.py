@@ -2,13 +2,14 @@ import os
 import sys
 import json
 import sqlite3
-import subprocess
-import hashlib
-import time
 
 scripts_dir = os.path.dirname(os.path.abspath(__file__))
 code_dir = os.path.dirname(scripts_dir)
 root_dir = os.path.dirname(code_dir)
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
+from core.knowledge_note import content_hash, normalize_note, serialize_metadata
 
 def ingest_to_fossil():
     reddit_path = os.path.join(root_dir, "data/raw/reddit/missing_and_uhr_narratives.json")
@@ -83,10 +84,17 @@ def ingest_to_fossil():
         url = post.get("url", "")
         selftext = post.get("selftext", "")
         body = f"**Source**: {url}\n\n{selftext}"
-        content_hash = hashlib.sha1(body.encode()).hexdigest()
-        metadata = json.dumps({"source_type": "reddit", "url": url, "subreddit": post.get("subreddit", "")})
+        note = normalize_note(
+            title=title,
+            body=body,
+            source_type="manual",
+            source_ref=url,
+            tier=0,
+            metadata={"source_type": "reddit", "url": url, "subreddit": post.get("subreddit", "")},
+        )
+        note_hash = content_hash(note["body"])
 
-        cur.execute("SELECT 1 FROM ai_note WHERE content_hash = ? LIMIT 1", (content_hash,))
+        cur.execute("SELECT 1 FROM ai_note WHERE content_hash = ? LIMIT 1", (note_hash,))
         if cur.fetchone():
             continue
 
@@ -96,7 +104,19 @@ def ingest_to_fossil():
                 metadata, artifact_weight, heat, retrieval_count,
                 content_hash, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, julianday('now'), julianday('now'))
-        """, (0, title, body, "manual", url, "raw", metadata, 0.05, 1.0, 0, content_hash))
+        """, (
+            note["tier"],
+            note["title"],
+            note["body"],
+            note["source_type"],
+            note["source_ref"],
+            note["process_level"],
+            serialize_metadata(note["metadata"]),
+            0.05,
+            1.0,
+            0,
+            note_hash,
+        ))
         
         success += 1
         if (i + 1) % 25 == 0:
