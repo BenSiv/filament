@@ -97,16 +97,26 @@ def main():
         print(f"Fossil DB not found: {args.db}")
         return
 
-    conn = sqlite3.connect(args.db)
-    cur = conn.cursor()
-    cur.executescript(SCHEMA_SQL)
-    conn.commit()
+    attempts = 5
+    for attempt in range(1, attempts + 1):
+        try:
+            conn = sqlite3.connect(args.db, timeout=5.0)
+            conn.execute("PRAGMA busy_timeout = 5000")
+            cur = conn.cursor()
+            cur.executescript(SCHEMA_SQL)
+            conn.commit()
 
-    ensure_ai_review_schema(cur)
-    conn.commit()
-    conn.close()
-
-    print("Migration complete.")
+            ensure_ai_review_schema(cur)
+            conn.commit()
+            conn.close()
+            print("Migration complete.")
+            return
+        except sqlite3.OperationalError as exc:
+            if "database is locked" not in str(exc).lower() or attempt == attempts:
+                raise
+            if 'conn' in locals():
+                conn.close()
+    print("Migration incomplete due to database lock.")
 
 
 if __name__ == "__main__":
