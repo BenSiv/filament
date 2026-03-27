@@ -257,20 +257,20 @@ def generate_reddit_leads(limit=50, fossil_db="data/knowledge.fossil", log_to_fo
                     tier_weight=0.5,
                 )
             
-            # Ask Ollama to evaluate the lead
+            # Ask Ollama to evaluate the lead (short, evidence-only rationale)
             prompt = f"""
-            You are a cold case forensic analyst. An internet sleuth posted a narrative that semantically aligns with an Unidentified Human Remains (UHR) case.
-            
+            You are a cold case forensic analyst. Evaluate whether this Reddit post provides a viable identity or critical circumstantial link to the UHR case.
+
             UHR Case {case_num} Details:
-            {desc[:800]}
-            
+            {desc[:900]}
+
             Reddit Sleuth Post: "{title}"
-            {post.get("selftext", "")[:1500]}
-            
-            MISSION:
-            Does this Reddit post suggest a viable identity (Missing Person name) or a critical circumstantial connection to this UHR?
-            If YES: Provide a brief 2-sentence explanation of the connection.
-            If NO: Reply exclusively with the exact string "NO_VIABLE_LEAD".
+            {post.get("selftext", "")[:1800]}
+
+            Return one of the following:
+            - If NO viable lead: output exactly "NO_VIABLE_LEAD"
+            - If YES: output a single-line rationale with concrete evidence only (no speculation), max 300 chars.
+              Format: "RATIONALE: <evidence-based summary>"
             """
             
             try:
@@ -286,12 +286,15 @@ def generate_reddit_leads(limit=50, fossil_db="data/knowledge.fossil", log_to_fo
                     analysis = response.get("thinking", "NO_VIABLE_LEAD")
                 
                 if "NO_VIABLE_LEAD" not in analysis:
+                    rationale = analysis.strip()
+                    if "RATIONALE:" in rationale:
+                        rationale = rationale.split("RATIONALE:", 1)[-1].strip()
                     lead = {
                         "uhr_case": case_num,
                         "reddit_url": post.get("url"),
                         "reddit_title": title,
                         "vector_similarity": float(score),
-                        "llm_analysis": analysis.strip()
+                        "llm_analysis": rationale
                     }
                     leads.append(lead)
                     if fossil_cur:
@@ -302,7 +305,7 @@ def generate_reddit_leads(limit=50, fossil_db="data/knowledge.fossil", log_to_fo
                             f"**UHR Case**: {case_num}\n"
                             f"**Reddit Thread**: [{title}]({post.get('url')})\n"
                             f"**Semantic Score**: {float(score):.2f}\n\n"
-                            f"## AI Forensic Analysis (qwen3.5:0.8b)\n{analysis.strip()}"
+                            f"## Evidence Rationale\n{rationale}"
                         )
                         lead_nid = insert_lead_note(
                             fossil_cur,
