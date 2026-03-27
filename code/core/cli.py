@@ -3,6 +3,11 @@ import sys
 import os
 import json
 
+core_dir = os.path.dirname(os.path.abspath(__file__))
+code_dir = os.path.dirname(core_dir)
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
 def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="FILAMENT: Forensic Intelligence Linking and Matching")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
