@@ -1,6 +1,13 @@
 import argparse
 import os
 import sqlite3
+import sys
+
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
+
+from knowledge_review import insert_review
 
 
 SCHEMA_SQL = """
@@ -128,24 +135,7 @@ def main():
             ),
         )
         if cur.rowcount:
-            cur.execute(
-                """
-                INSERT INTO ai_review(
-                    qid, nid, atomicity_status, connectivity_status, duplication_status,
-                    title_status, promotion_status, action_summary, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, julianday('now'))
-                """,
-                (
-                    None,
-                    nid,
-                    "unknown",
-                    "unknown",
-                    "unknown",
-                    "unknown",
-                    args.promotion_status,
-                    f"Promoted lead to tier {args.tier}.",
-                ),
-            )
+            insert_review(cur, None, nid, args.promotion_status, f"Promoted lead to tier {args.tier}.")
             promoted += 1
 
     conn.commit()

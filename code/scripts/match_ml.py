@@ -21,6 +21,7 @@ if code_dir not in sys.path:
 
 from train_matching_model import extract_features, FEATURES
 from core.knowledge_note import content_hash, normalize_note, serialize_metadata
+from knowledge_review import insert_review
 
 # Config
 DB_HOST = os.getenv('POSTGRES_HOST', 'localhost')
@@ -153,17 +154,7 @@ def log_retrieval_note(cur, qid, nid, rank, score=0.0, tier_weight=1.0, reinforc
 
 
 def log_review(cur, qid, nid, promotion_status, action_summary):
-    if not nid:
-        return
-    cur.execute(
-        """
-        INSERT INTO ai_review(
-            qid, nid, atomicity_status, connectivity_status, duplication_status,
-            title_status, promotion_status, action_summary, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, julianday('now'))
-        """,
-        (qid, nid, "unknown", "unknown", "unknown", "unknown", promotion_status, action_summary),
-    )
+    insert_review(cur, qid, nid, promotion_status, action_summary)
 
 
 def insert_lead_note(cur, title, body, source_ref, metadata):

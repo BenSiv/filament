@@ -26,12 +26,6 @@ def main():
     if not args.skip_reddit:
         _run([
             sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
-        _run([
-            sys.executable,
             "code/scripts/match_reddit_sleuths.py",
             "--limit",
             str(args.limit),
@@ -42,24 +36,12 @@ def main():
     if not args.skip_sqlite:
         _run([
             sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
-        _run([
-            sys.executable,
             "code/scripts/match_sqlite.py",
             "--fossil-db",
             args.fossil_db,
         ])
 
     if not args.skip_hybrid:
-        _run([
-            sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
         _run([
             sys.executable,
             "code/scripts/match_hybrid.py",
@@ -70,24 +52,12 @@ def main():
     if not args.skip_ml:
         _run([
             sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
-        _run([
-            sys.executable,
             "code/scripts/match_ml.py",
             "--fossil-db",
             args.fossil_db,
         ])
 
     if not args.skip_consolidate:
-        _run([
-            sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
         _run([
             sys.executable,
             "code/scripts/consolidate_leads.py",
@@ -98,12 +68,6 @@ def main():
     if not args.skip_review_seed:
         _run([
             sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
-        _run([
-            sys.executable,
             "code/scripts/review_lead_candidates.py",
             "--db",
             args.fossil_db,
@@ -112,12 +76,6 @@ def main():
         ])
 
     if not args.skip_triage:
-        _run([
-            sys.executable,
-            "code/scripts/migrate_fossil_ai.py",
-            "--db",
-            args.fossil_db,
-        ])
         _run([
             sys.executable,
             "code/scripts/export_promotion_queue.py",

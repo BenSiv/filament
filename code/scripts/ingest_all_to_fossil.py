@@ -21,8 +21,11 @@ code_dir = os.path.dirname(scripts_dir)
 root_dir = os.path.dirname(code_dir)
 if code_dir not in sys.path:
     sys.path.insert(0, code_dir)
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
 
 from core.knowledge_note import content_hash, normalize_note, serialize_metadata
+from knowledge_review import insert_review
 
 FOSSIL_DB = os.path.join(root_dir, "data/knowledge.fossil")
 FOSSIL_WORKSPACE = os.path.join(root_dir, "data/knowledge_workspace")
@@ -197,15 +200,7 @@ def log_retrieval_note(cur, qid, nid, rank, score=0.0, tier_weight=1.0, reinforc
 
 
 def log_review(cur, qid, nid, promotion_status, action_summary):
-    cur.execute(
-        """
-        INSERT INTO ai_review(
-            qid, nid, atomicity_status, connectivity_status, duplication_status,
-            title_status, promotion_status, action_summary, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, julianday('now'))
-        """,
-        (qid, nid, "unknown", "unknown", "unknown", "unknown", promotion_status, action_summary),
-    )
+    insert_review(cur, qid, nid, promotion_status, action_summary)
 
 def ingest_uhr_cases(fossil_cur, filament_cur, batch=500):
     filament_cur.execute("""

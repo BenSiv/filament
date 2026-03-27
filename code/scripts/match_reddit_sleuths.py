@@ -10,8 +10,11 @@ scripts_dir = os.path.dirname(os.path.abspath(__file__))
 code_dir = os.path.dirname(scripts_dir)
 if code_dir not in sys.path:
     sys.path.insert(0, code_dir)
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
 
 from core.knowledge_note import content_hash, normalize_note, serialize_metadata
+from knowledge_review import insert_review
 
 def cosine_similarity(v1, v2):
     return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
@@ -128,17 +131,7 @@ def log_retrieval_note(cur, qid, nid, rank, score=0.0, tier_weight=1.0, reinforc
 
 
 def log_review(cur, qid, nid, promotion_status, action_summary):
-    if not nid:
-        return
-    cur.execute(
-        """
-        INSERT INTO ai_review(
-            qid, nid, atomicity_status, connectivity_status, duplication_status,
-            title_status, promotion_status, action_summary, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, julianday('now'))
-        """,
-        (qid, nid, "unknown", "unknown", "unknown", "unknown", promotion_status, action_summary),
-    )
+    insert_review(cur, qid, nid, promotion_status, action_summary)
 
 
 def insert_lead_note(cur, title, body, source_ref, metadata):
