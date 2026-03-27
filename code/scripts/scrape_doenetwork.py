@@ -7,6 +7,8 @@ Uses Selenium to bypass simple bot protection/403 errors.
 """
 
 import json
+import sys
+import os
 import time
 import argparse
 import os
@@ -184,23 +186,13 @@ def scrape_cases_batch(driver, case_ids, output_file, resume=True):
             
     return scraped
 
-def convert_jsonl_to_json(jsonl_file, json_file):
-    records = []
-    seen_ids = set()
-    with open(jsonl_file, 'r') as f:
-        for line in f:
-            try:
-                rec = json.loads(line)
-                case_id = rec.get("case_id")
-                if case_id and case_id in seen_ids:
-                    continue
-                if case_id:
-                    seen_ids.add(case_id)
-                records.append(rec)
-            except: pass
-    with open(json_file, 'w') as f:
-        json.dump(records, f, indent=2)
-    return len(records)
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
+from scraper_utils import convert_jsonl_to_json
+
+def _case_key(rec):
+    return rec.get("case_id")
 
 def main():
     parser = argparse.ArgumentParser(description="Doe Network Scraper (Selenium)")
@@ -240,7 +232,7 @@ def main():
 
         jsonl_file = args.output.replace('.json', '.jsonl')
         scrape_cases_batch(driver, case_ids, jsonl_file)
-        convert_jsonl_to_json(jsonl_file, args.output)
+        convert_jsonl_to_json(jsonl_file, args.output, _case_key)
         
     finally:
         driver.quit()

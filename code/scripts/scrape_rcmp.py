@@ -1,5 +1,7 @@
 
 import json
+import sys
+import os
 import time
 import os
 import requests
@@ -226,18 +228,16 @@ def main():
     # Convert JSONL to JSON
     final_data = []
     try:
-        seen_ids = set()
-        with open(jsonl_file, 'r') as f_in:
-            for line in f_in:
-                rec = json.loads(line)
-                case_id = rec.get("case_id")
-                if case_id and case_id in seen_ids:
-                    continue
-                if case_id:
-                    seen_ids.add(case_id)
-                final_data.append(rec)
-        with open(OUTPUT_FILE, 'w') as f_final:
-            json.dump(final_data, f_final, indent=2)
+        scripts_dir = os.path.dirname(os.path.abspath(__file__))
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from scraper_utils import dedupe_records, iter_jsonl, write_json
+
+        def _case_key(rec):
+            return rec.get("case_id")
+
+        final_data = dedupe_records(iter_jsonl(jsonl_file), _case_key)
+        write_json(OUTPUT_FILE, final_data)
     except FileNotFoundError:
         pass
         

@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import time
+import sys
 
 def fetch_reddit_json(url, headers):
     response = requests.get(url, headers=headers)
@@ -16,6 +17,10 @@ def fetch_reddit_json(url, headers):
         return []
 
 def scrape_reddit_narratives(output_dir="data/raw/reddit", limit=100):
+    scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scraper_utils import write_json
     headers = {"User-Agent": "Filament/1.0 (Research tool for cold case narrative extraction)"}
     os.makedirs(output_dir, exist_ok=True)
     
@@ -67,8 +72,7 @@ def scrape_reddit_narratives(output_dir="data/raw/reddit", limit=100):
         time.sleep(2) # Respect rate limits slightly
         
     output_file = os.path.join(output_dir, "missing_and_uhr_narratives.json")
-    with open(output_file, "w") as f:
-        json.dump(all_extracted, f, indent=2)
+    write_json(output_file, all_extracted)
         
     print(f"Successfully compiled {len(all_extracted)} total Missing/UHR narrative posts. Saved to {output_file}")
 

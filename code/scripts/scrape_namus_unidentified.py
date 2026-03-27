@@ -11,6 +11,8 @@ The search API has a 10,000 result limit, so we query by state to get full cover
 """
 
 import json
+import sys
+import os
 import time
 import argparse
 import os
@@ -236,27 +238,13 @@ def fetch_case_details_batch(session, case_summaries, output_file, resume=True):
     return fetched
 
 
-def convert_jsonl_to_json(jsonl_file, json_file):
-    """Convert JSONL file to pretty-printed JSON array."""
-    records = []
-    seen_ids = set()
-    with open(jsonl_file, 'r') as f:
-        for line in f:
-            try:
-                rec = json.loads(line)
-                case_id = rec.get('namus2Number') or rec.get('id')
-                if case_id and case_id in seen_ids:
-                    continue
-                if case_id:
-                    seen_ids.add(case_id)
-                records.append(rec)
-            except json.JSONDecodeError:
-                pass
-    
-    with open(json_file, 'w') as f:
-        json.dump(records, f, indent=2)
-    
-    return len(records)
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
+from scraper_utils import convert_jsonl_to_json
+
+def _case_key(rec):
+    return rec.get('namus2Number') or rec.get('id')
 
 
 def test_api(session):
@@ -324,7 +312,7 @@ def main():
     print(f"Fetched {fetched} new case details.")
     
     # Convert to JSON
-    count = convert_jsonl_to_json(jsonl_file, args.output)
+    count = convert_jsonl_to_json(jsonl_file, args.output, _case_key)
     print(f"Saved {count} records to {args.output}")
 
 

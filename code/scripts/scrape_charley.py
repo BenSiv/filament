@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import sys
+import os
 import time
 import os
 import re
@@ -96,6 +98,11 @@ def main():
     urls = get_case_urls()
     print(f"Found {len(urls)} cases.")
     
+    scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scraper_utils import write_json
+
     cases = []
     seen_urls = set()
     # Process
@@ -118,12 +125,10 @@ def main():
         
         # Incremental save
         if i % 10 == 0:
-            with open(OUTPUT_FILE, 'w') as f:
-                json.dump(cases, f, indent=2)
+            write_json(OUTPUT_FILE, cases)
 
     # Final save
-    with open(OUTPUT_FILE, 'w') as f:
-        json.dump(cases, f, indent=2)
+    write_json(OUTPUT_FILE, cases)
     print("Done.")
 
 if __name__ == '__main__':
