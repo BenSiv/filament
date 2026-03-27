@@ -239,10 +239,17 @@ def fetch_case_details_batch(session, case_summaries, output_file, resume=True):
 def convert_jsonl_to_json(jsonl_file, json_file):
     """Convert JSONL file to pretty-printed JSON array."""
     records = []
+    seen_ids = set()
     with open(jsonl_file, 'r') as f:
         for line in f:
             try:
-                records.append(json.loads(line))
+                rec = json.loads(line)
+                case_id = rec.get('namus2Number') or rec.get('id')
+                if case_id and case_id in seen_ids:
+                    continue
+                if case_id:
+                    seen_ids.add(case_id)
+                records.append(rec)
             except json.JSONDecodeError:
                 pass
     

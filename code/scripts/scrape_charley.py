@@ -97,6 +97,7 @@ def main():
     print(f"Found {len(urls)} cases.")
     
     cases = []
+    seen_urls = set()
     # Process
     for i, url in enumerate(urls):
         print(f"[{i+1}/{len(urls)}] Scraping {url}")
@@ -105,6 +106,10 @@ def main():
             if resp.status_code == 200:
                 case_data = parse_case(resp.content, url)
                 if case_data:
+                    case_url = case_data.get("url") or url
+                    if case_url in seen_urls:
+                        continue
+                    seen_urls.add(case_url)
                     cases.append(case_data)
         except Exception as e:
             print(f"Error scraping {url}: {e}")

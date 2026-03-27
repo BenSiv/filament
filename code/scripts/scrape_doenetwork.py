@@ -186,9 +186,17 @@ def scrape_cases_batch(driver, case_ids, output_file, resume=True):
 
 def convert_jsonl_to_json(jsonl_file, json_file):
     records = []
+    seen_ids = set()
     with open(jsonl_file, 'r') as f:
         for line in f:
-            try: records.append(json.loads(line))
+            try:
+                rec = json.loads(line)
+                case_id = rec.get("case_id")
+                if case_id and case_id in seen_ids:
+                    continue
+                if case_id:
+                    seen_ids.add(case_id)
+                records.append(rec)
             except: pass
     with open(json_file, 'w') as f:
         json.dump(records, f, indent=2)

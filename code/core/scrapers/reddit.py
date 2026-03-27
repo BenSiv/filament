@@ -29,6 +29,8 @@ def scrape_reddit_narratives(output_dir="data/raw/reddit", limit=100):
     ]
     
     all_extracted = []
+    seen_ids = set()
+    seen_urls = set()
     
     for target in targets:
         print(f"Scraping [{target['name']}]...")
@@ -39,6 +41,16 @@ def scrape_reddit_narratives(output_dir="data/raw/reddit", limit=100):
             p_data = post["data"]
             # We only care about text posts with a substantial narrative
             if p_data.get("selftext") and len(p_data.get("selftext", "")) > 100:
+                post_id = p_data.get("id")
+                post_url = p_data.get("url")
+                if post_id and post_id in seen_ids:
+                    continue
+                if post_url and post_url in seen_urls:
+                    continue
+                if post_id:
+                    seen_ids.add(post_id)
+                if post_url:
+                    seen_urls.add(post_url)
                 all_extracted.append({
                     "id": p_data.get("id"),
                     "title": p_data.get("title"),
@@ -62,4 +74,3 @@ def scrape_reddit_narratives(output_dir="data/raw/reddit", limit=100):
 
 if __name__ == "__main__":
     scrape_reddit_narratives()
-
