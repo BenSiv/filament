@@ -11,9 +11,13 @@ This module handles:
 from .bccs import BCCSClient
 from .ncmpur import NCMPURClient
 from .canlii import CanLIIClient
+from .websleuths import scrape_websleuths_narratives
+from .courtlistener import scrape_courtlistener_data
 
 __all__ = [
     "BCCSClient",
     "NCMPURClient", 
     "CanLIIClient",
+    "scrape_websleuths_narratives",
+    "scrape_courtlistener_data",
 ]
