@@ -1,0 +1,163 @@
+#
+# filament-tools.th1
+#
+# Filament domain-specific tool extensions for the Fossil AI Agent.
+#
+
+# ---------------------------------------------------------------------------
+# filament_stats
+# ---------------------------------------------------------------------------
+proc filament_stats_body {} {
+  set result "## Filament Knowledge Base Statistics\n\n"
+  append result "| Source Type | Count |\n"
+  append result "|-------------|-------|\n"
+  query {
+    SELECT source_type, COUNT(*) AS cnt
+    FROM ai_note
+    GROUP BY source_type
+    ORDER BY cnt DESC
+  } {
+    append result "| $source_type | $cnt |\n"
+  }
+  query {SELECT COUNT(*) AS total FROM ai_note} {
+    append result "\n**Total notes**: $total\n"
+  }
+  query {SELECT COUNT(*) AS cnt FROM ai_note_link} {
+    append result "**Total links**: $cnt\n"
+  }
+  return $result
+}
+
+agent_capability_register "filament_stats" {Return summary statistics of the Filament knowledge base (note counts, total leads, etc.)} {{"type":"object","properties":{},"required":[]}} 0 0 0 { filament_stats_body }
+
+# ---------------------------------------------------------------------------
+# filament_search_cases
+# ---------------------------------------------------------------------------
+proc filament_search_cases_body {} {
+  global agent_tool_args
+  set kw [agent_json_extract $agent_tool_args "query"]
+  set src_type [agent_json_extract $agent_tool_args "source_type"]
+  
+  if {$kw eq ""} { return "Error: 'query' field is required." }
+
+  set kw_like "%$kw%"
+  set result "## Filament Search: \"$kw\""
+  if {$src_type ne ""} { append result " \[type=$src_type\]" }
+  append result "\n\n"
+  append result "| Case/Ref | Title | Type | Tier |\n"
+  append result "|----------|-------|------|------|\n"
+  set count 0
+
+  if {$src_type ne ""} {
+    query {
+      SELECT source_ref, title, source_type, tier
+      FROM ai_note
+      WHERE source_type = $src_type
+        AND (title LIKE $kw_like OR body LIKE $kw_like)
+      ORDER BY heat DESC, tier DESC
+      LIMIT 10
+    } {
+      append result "| $source_ref | $title | $source_type | $tier |\n"
+      set count [expr {$count + 1}]
+    }
+  } else {
+    query {
+      SELECT source_ref, title, source_type, tier
+      FROM ai_note
+      WHERE (title LIKE $kw_like OR body LIKE $kw_like)
+      ORDER BY heat DESC, tier DESC
+      LIMIT 10
+    } {
+      append result "| $source_ref | $title | $source_type | $tier |\n"
+      set count [expr {$count + 1}]
+    }
+  }
+  if {$count == 0} { append result "_No results found._\n" }
+  return $result
+}
+
+agent_capability_register "filament_search_cases" {Search Filament notes by keyword (keyword, source_type, limit).} {{"type":"object","properties":{"query":{"type":"string"},"source_type":{"type":"string"}},"required":["query"]}} 0 0 0 { filament_search_cases_body }
+
+# ---------------------------------------------------------------------------
+# filament_case_detail
+# ---------------------------------------------------------------------------
+proc filament_case_detail_body {} {
+  global agent_tool_args
+  set ref [agent_json_extract $agent_tool_args "source_ref"]
+  if {$ref eq ""} { return "Error: 'source_ref' field is required." }
+
+  set found 0
+  set result ""
+  query {
+    SELECT title, body, source_type, tier, process_level, metadata, heat, created_at
+    FROM ai_note
+    WHERE source_ref = $ref
+    LIMIT 1
+  } {
+    set result "## $title\n\n"
+    append result "**Type**: $source_type | **Tier**: $tier | **Process Level**: $process_level\n"
+    append result "**Heat**: $heat | **Ingested**: $created_at\n"
+    append result "\n---\n\n$body\n"
+    set found 1
+  }
+  if {!$found} { return "No note found for source_ref: $ref" }
+  return $result
+}
+
+agent_capability_register "filament_case_detail" {Retrieve the full narrative and metadata for a specific case (source_ref).} {{"type":"object","properties":{"source_ref":{"type":"string"}},"required":["source_ref"]}} 0 0 0 { filament_case_detail_body }
+
+# ---------------------------------------------------------------------------
+# filament_list_leads
+# ---------------------------------------------------------------------------
+proc filament_list_leads_body {} {
+  set result "## Top Filament Forensic Leads\n\n"
+  append result "| Ref | Lead Title | Heat | State |\n"
+  append result "|-----|-----------|------|-------|\n"
+  set count 0
+  query {
+    SELECT source_ref, title, heat, process_level
+    FROM ai_note
+    WHERE source_type = 'lead'
+    ORDER BY heat DESC
+    LIMIT 10
+  } {
+    append result "| $source_ref | $title | $heat | $process_level |\n"
+    set count [expr {$count + 1}]
+  }
+  return $result
+}
+
+agent_capability_register "filament_list_leads" {List the top AI-generated forensic lead candidates.} {{"type":"object","properties":{},"required":[]}} 0 0 0 { filament_list_leads_body }
+
+# ---------------------------------------------------------------------------
+# filament_lead_detail
+# ---------------------------------------------------------------------------
+proc filament_lead_detail_body {} {
+  global agent_tool_args
+  set ref [agent_json_extract $agent_tool_args "source_ref"]
+  if {$ref eq ""} { return "Error: 'source_ref' field is required." }
+
+  set lead_nid 0
+  set result ""
+  query {
+    SELECT nid, title, body, heat FROM ai_note
+    WHERE source_type='lead' AND source_ref=$ref LIMIT 1
+  } {
+    set lead_nid $nid
+    set result "## Lead Analysis: $title\n\n**Heat**: $heat\n\n$body\n"
+  }
+  if {$lead_nid == 0} { return "No lead found for $ref" }
+
+  append result "\n---\n### Linked Cases\n"
+  query {
+    SELECT n.source_type, n.source_ref, n.title, l.link_type
+    FROM ai_note_link l
+    JOIN ai_note n ON n.nid = l.to_nid
+    WHERE l.from_nid = $lead_nid
+  } {
+    append result "- \[$link_type\] \[$source_type\] **$source_ref**: $title\n"
+  }
+  return $result
+}
+
+agent_capability_register "filament_lead_detail" {Get full analysis plus linked cases for a specific lead.} {{"type":"object","properties":{"source_ref":{"type":"string"}},"required":["source_ref"]}} 0 0 0 { filament_lead_detail_body }
